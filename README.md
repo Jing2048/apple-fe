@@ -1,10 +1,10 @@
 # 互动活动工程基础设施
 
-当前首页已提供原创可玩的“云朵邮局”，旧工程台位于 `/lab`。最新体验、实际截图/录屏与测试见 [云朵邮局验收](docs/cloud-post-acceptance.md)。用户要求手机可直接打开的托管链接，当前正在协调受支持的私有发布；内部地址不是最终交付链接。
+“云朵邮局”已发布到 <https://jing-cloud-post-demo.fizzyllama25.chatgpt.site>，任何拿到链接的人均可打开，无需登录。正式域名已通过未登录浏览器完整试玩、真实保存和数据库读回。首页为原创可玩体验，旧工程台位于 `/lab`；发布版本与验证边界见 [Sites 部署记录](docs/sites-adaptation.md)，环境内截图/录屏与测试见 [云朵邮局验收](docs/cloud-post-acceptance.md)。
 
 面向中国大陆、微信内置浏览器和 Safari 的活动开发基线。首页以原创体验贯通真实保存链路；`/lab` 使用占位素材验证两类通用交互、状态恢复、后端契约、第一方事件采集和可重复交付。
 
-这里没有正式 Apple 页面、真实会员接口、抽奖或权益发放。外部适配器明确标为 `mock`；`NODE_ENV=production` 时禁止使用该适配器。上传的 Keynote 尚未成功读取，技术探针不能视为其中具体玩法已验收。
+这里没有正式 Apple 页面、真实会员接口、抽奖或权益发放。外部适配器明确标为 `mock`；原 Fastify API 保留 `NODE_ENV=production` 启动保护，已托管版本仅用于 demo 验收。上传的 Keynote 尚未成功读取，技术探针不能视为其中具体玩法已验收。
 
 当前已在本任务云环境部署编译后的完整容器栈。最新证据见 [部署验收](docs/deployment-acceptance.md)，整个项目的能力与扩展边界见 [能力映射](docs/project-capabilities.md)。测试页是验收入口，活动目录、契约、数据库和 SDK 可由后续页面复用。
 
@@ -61,7 +61,7 @@ docker compose -f infra/compose.yaml down
 ```text
 apps/web            中文验证台、状态机、资源与埋点适配
 apps/api            契约校验、会话、事件持久化、外部适配器
-apps/worker         独立 D1 Store、SQLite 迁移与测试（托管入口未完成）
+apps/worker         共享 D1 Store、SQLite 迁移与测试（完整托管工程见部署记录）
 packages/contracts  共享接口、事件和资源定义
 infra               本地容器、API/web 制品、同源网关
 tests/e2e           面向编译部署的跨应用浏览器验收
@@ -72,9 +72,9 @@ docs                决策、验证证据要求、运行与回滚
 
 ## Sites 托管状态
 
-`.openai/hosting.json` 仅保存已注册的私有 Site 身份，不含凭据，也不代表发布完成。可运行整栈仍为 Nginx + Fastify + PostgreSQL；Sites 的 Worker/D1 适配单独位于 `apps/worker`，不会替换原数据库或迁移已有开发数据。
+`.openai/hosting.json` 仅保存 Site 身份，不含凭据。原仓库整栈仍为 Nginx + Fastify + PostgreSQL；`apps/worker` 保留独立 D1 Store、schema 和本地测试。已发布的官方 Vinext/Worker/D1 工程另存于该 Site 的私有 source repository，尚未回存本分支，不会替换原数据库或迁移已有开发数据。网页公开不改变源码访问范围，访客通过独立随机 Cookie 会话隔离，原私有数据不公开。
 
-已实现 D1 Store 与 schema 迁移，并以本地真实 SQLite 验证原子幂等、整批事件回滚、去重、会话/活动隔离及文件重开持久性。仍需按官方 Sites 模板完成 HTTP 入口、静态资源、运行时绑定/安全会话、迁移 journal、构建发布及托管域名端到端验收。详见 [适配状态与发布门禁](docs/sites-adaptation.md)。不能仅发布静态页后宣称真实保存已接通。
+公开托管版的官方构建、类型检查及 8 项本地 Miniflare D1 测试通过，平台报告发布 `succeeded`。未登录云浏览器已完成三站六星、真实参与回执与数据库读回，本轮开始/完成事件各 1 条；这项线上验证与本地测试分别记录。远程并发/故障矩阵、Safari/微信真机及客户生产验收尚未完成。两个发布版本、源码基准与证据范围见 [Sites 部署记录](docs/sites-adaptation.md)。
 
 仓库只提交源码、共享契约、锁文件、迁移、测试和必要交付配置。真实 `.env`、密钥、数据库/备份、依赖、构建产物、运行日志、截图及录屏不入库。`.env.example` 仅包含本地公开占位值，托管环境必须使用平台安全配置。
 

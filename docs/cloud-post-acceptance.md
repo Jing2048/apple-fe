@@ -1,6 +1,6 @@
 # 云朵邮局：可玩体验验收
 
-本任务云环境已经部署原创“云朵邮局”。首页 `/` 是可玩体验，工程验证台保留于 `/lab`。用户最新要求手机可直接访问的网页，因此**环境内可用不等于最终链接已交付**：外部托管发布仍待主对话的 Sites 能力及受支持的源码交付路径。
+原创“云朵邮局”已提供正式公开入口：<https://jing-cloud-post-demo.fizzyllama25.chatgpt.site>，任何拿到链接的人均可打开，无需登录。首页 `/` 是可玩体验，工程验证台保留于 `/lab`。以下游戏与浏览器测试证据来自本任务云环境的编译容器栈；正式域名的完整试玩、两个发布版本和剩余验证边界见 [Sites 部署记录](sites-adaptation.md)。
 
 ## 玩法与设计
 
@@ -10,7 +10,7 @@
 
 进行中刷新会恢复进度并暂停；完成后刷新或响应丢失，以原 round UUID 再向服务端确认。可选统计默认关闭，不启用也能完整游玩。技术回执、事件数量和数据库读回收在“验收记录”折叠区。
 
-## 已执行
+## 本任务编译容器栈已执行
 
 - 类型、lint、格式、构建和预算通过；114 项单元/API 测试（contracts 13、web 50、API 51）。
 - 23 项真实 PostgreSQL 集成通过；新增 cloud-post，继续保留 lab 与未知活动拒绝、跨活动幂等/事件隔离。
@@ -28,7 +28,7 @@
 - `.artifacts/cloud-post-desktop-first.png`、`cloud-post-desktop-playing.png`、`cloud-post-desktop-complete.png`
 - 实际录屏：`.artifacts/cloud-post-desktop.webm`、`cloud-post-mobile.webm`
 
-这些是验收证据，不替代用户要求的可点击网页链接。`localhost:8080` 仅属于当前云环境，不能当作用户手机地址。
+这些是环境内验收证据，不是正式站点截图或录屏。手机访问使用上方 Sites 正式链接；`localhost:8080` 仅属于当前云环境。
 
 ## 复现与测量
 
@@ -46,6 +46,8 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium PERF_PAGE_PATH=/ PERF_LABE
 
 ## 发布边界
 
-当前完整编译栈仍为 Nginx + Fastify + PostgreSQL，web/API/数据库端口 8080/3301/5432，仅回环映射。真实 Apple/会员/奖品接口未接入，也没有真实邮寄。新页面为原创概念，不是未读取 Keynote 的复刻。
+本任务云环境的完整编译栈仍为 Nginx + Fastify + PostgreSQL，web/API/数据库端口 8080/3301/5432，仅回环映射；独立托管版本采用官方 Vinext + Worker + D1，没有把原 PostgreSQL 服务发布到外网。真实 Apple/会员/奖品接口未接入，也没有真实邮寄。新页面为原创概念，不是未读取 Keynote 的复刻。
 
-本环境没有 Sites 工具、技能、helper 或上传入口。项目已关联主对话注册的唯一 Site ID，普通 Git 访问该 Sites 源仓库因缺少原生认证而失败，已停止。用户另行授权将源码推送到原 GitHub 仓库独立分支，供主对话接线。主对话的 Sites 可提供 Worker/D1，但不支持当前 Postgres TCP；独立 D1 Store、迁移与 13 项本地 SQLite 测试已实现，托管 HTTP/资源/绑定/迁移配置及远程验收仍未完成，见 [适配状态](sites-adaptation.md)。不能仅部署静态页面并伪造保存成功。用户已经明确授权供其访问的托管发布，无需再把发布授权当作阻塞。
+主对话基于 GitHub 源码基准 `c9ee5a7c658e8d9c7e8516eded543cccb2b8b870` 接线并通过官方 Sites 工具发布，公开版 source commit 为 `22ef72933c7b19559d3558159259aef2a7928eae`，平台状态为 `succeeded`、访问范围为 `public`。官方构建、类型检查及 8 项本地 Miniflare D1 测试通过。
+
+正式域名的未登录云浏览器已实际完成首屏、同意匿名统计、三站六星、祝福卡、真实保存回执及数据库核验。本轮读回 2 条事件（开始/完成各 1），查询时间 `2026-10-27T06:01:34.272Z`。这证明该线上试玩链路通过；远程并发、故障恢复、完整隔离矩阵、Safari/微信真机与客户生产验收不在该结论范围内。本页原有本地测试数量与性能数据不得解读为正式站点实测。
