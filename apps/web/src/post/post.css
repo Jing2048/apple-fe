@@ -545,6 +545,7 @@
   color: #d6a849;
 }
 .post-star-button.post-star-collected {
+  pointer-events: none;
   color: #d3ddc8;
   background: transparent;
   animation: none;
@@ -573,7 +574,15 @@
   display: block;
   width: 100%;
 }
+.post-player-cloud > svg.post-cloud-drag-handle {
+  pointer-events: visiblePainted;
+}
+/* The first ellipse is the decorative ground shadow, not the courier body. */
+.post-player-cloud > svg.post-cloud-drag-handle > ellipse:first-of-type {
+  pointer-events: none;
+}
 .post-player-cloud > span {
+  pointer-events: none;
   position: absolute;
   width: 100%;
   bottom: -6px;

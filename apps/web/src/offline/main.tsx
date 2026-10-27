@@ -10,7 +10,8 @@ import {
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Campaign } from '@apple/contracts';
-import { CloudPost, POST_BLESSINGS } from '../post/CloudPost';
+import { POST_BLESSINGS } from '../post/CloudPost';
+import { CameraPost } from '../camera/CameraPost';
 import type { OfflinePostRuntime } from '../post/runtime';
 import type { BlessingIndex } from '../post/recovery';
 import { OfflineRecords } from './records';
@@ -184,7 +185,7 @@ function OfflineExperience() {
           )}
         </section>
       )}
-      <CloudPost key={generation} offline={runtime} />
+      <CameraPost key={generation} offline={runtime} />
     </>
   );
 }

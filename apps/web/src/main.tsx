@@ -5,7 +5,7 @@ import './entry.css';
 
 const Lab = lazy(() => import('./App').then(({ App }) => ({ default: App })));
 const Post = lazy(() =>
-  import('./post/CloudPost').then(({ CloudPost }) => ({ default: CloudPost })),
+  import('./camera/CameraPost').then(({ CameraPost }) => ({ default: CameraPost })),
 );
 const isLab = location.pathname === '/lab' || location.pathname.startsWith('/lab/');
 document.title = isLab ? '互动工程验证台' : '云朵邮局 · 寄一封星光';

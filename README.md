@@ -4,6 +4,8 @@
 
 需要直接打开文件时，可运行 `pnpm build:offline`，得到单文件 `.artifacts/offline/cloud-post-offline.html`。它明确标记离线演示，保留玩法与卡片，只使用本机记录；不依赖 API、CDN 或登录。构建、运行和测试见 [离线版说明](docs/offline-demo.md)。
 
+源码与离线统一验收版另含可选相机实景叠加：开始后点击开启并授权，画面仅作本机背景，关闭/暂停/完成时释放，不拍照或上传；它不具备空间定位。相机是否可用取决于浏览器的实际安全上下文与媒体能力，普通玩法始终保留。本次未更新上述已上线站点。
+
 面向中国大陆、微信内置浏览器和 Safari 的活动开发基线。首页以原创体验贯通真实保存链路；`/lab` 使用占位素材验证两类通用交互、状态恢复、后端契约、第一方事件采集和可重复交付。
 
 这里没有正式 Apple 页面、真实会员接口、抽奖或权益发放。外部适配器明确标为 `mock`；原 Fastify API 保留 `NODE_ENV=production` 启动保护，已托管版本仅用于 demo 验收。上传的 Keynote 尚未成功读取，技术探针不能视为其中具体玩法已验收。
@@ -35,7 +37,7 @@ pnpm exec playwright install --with-deps chromium webkit
 PLAYWRIGHT_WEBKIT=1 pnpm test:e2e
 ```
 
-`pnpm check` 包含原有 114 项单元/API 测试及 13 项 Worker Store 本地 SQLite 测试；真实 PostgreSQL 集成和浏览器 E2E 独立执行。Worker Store 可单独运行 `pnpm test:worker`、`pnpm typecheck:worker`。本地 SQLite 测试不等于远程 D1 验收。
+`pnpm check` 共 162 项测试：原有 114 项单元/API、14 项本机记录、21 项相机控制器与 13 项 Worker Store 本地 SQLite 测试；真实 PostgreSQL 集成和浏览器 E2E 独立执行。Worker Store 可单独运行 `pnpm test:worker`、`pnpm typecheck:worker`。本地 SQLite 测试不等于远程 D1 验收。
 
 验证已经部署的编译产物时设置 `E2E_BASE_URL=http://localhost:8080`，Playwright 将不启动开发服务器。首页完成互动后，展开“验收记录”独立读回当前会话的本轮事实；`/lab` 的“重发本轮请求”验证相同幂等键的回执不变。具体操作与性能复现见验收文档。
 

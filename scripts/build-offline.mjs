@@ -69,7 +69,7 @@ const html = `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f8f6ef">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; media-src blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="云朵邮局单文件离线演示；记录仅在本机，不连接服务端。">
 <title>云朵邮局 · 离线演示</title><style>${css}</style></head>
 <body><noscript>这是离线演示，请用支持 JavaScript 的现代浏览器打开完整 HTML 文件。</noscript><div id="root"></div><script>${javascript}</script></body></html>\n`;

@@ -54,7 +54,13 @@ const blessings = [
 ] as const;
 export const POST_BLESSINGS = blessings;
 
-export function CloudPost({ offline }: CloudPostProps = {}) {
+export function CloudPost({
+  offline,
+  scene,
+  controls,
+  introNote,
+  onSceneActiveChange,
+}: CloudPostProps = {}) {
   const draftStorage = offline ? offline.draftStorage : getPostStorage();
   const [telemetry] = useState(() =>
     offline ? null : new TelemetryClient({ campaignId, releaseId }),
@@ -87,6 +93,11 @@ export function CloudPost({ offline }: CloudPostProps = {}) {
   const pointer = useRef<{ id: number; point: Point } | null>(null);
   stateRef.current = state;
   blessingRef.current = blessingIndex;
+
+  useEffect(() => {
+    onSceneActiveChange?.(state.phase === 'playing');
+    return () => onSceneActiveChange?.(false);
+  }, [state.phase, onSceneActiveChange]);
 
   useEffect(() => {
     if (state.phase === 'completed') {
@@ -263,6 +274,14 @@ export function CloudPost({ offline }: CloudPostProps = {}) {
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
   };
+  const pointerCaptureLost = (event: PointerEvent<HTMLDivElement>) => {
+    // An older pointer losing capture must not cancel a different active gesture.
+    if (
+      pointer.current?.id === event.pointerId &&
+      !event.currentTarget.hasPointerCapture(event.pointerId)
+    )
+      pointer.current = null;
+  };
   const reset = () => {
     pointer.current = null;
     setCloudPoint({ x: 50, y: 74 });
@@ -381,6 +400,7 @@ export function CloudPost({ offline }: CloudPostProps = {}) {
               </button>
             )}
             <p className="post-gentle-note">没有倒计时，也没有输赢。只收集一点开心。</p>
+            {introNote}
           </section>
         )}
 
@@ -414,10 +434,9 @@ export function CloudPost({ offline }: CloudPostProps = {}) {
               onPointerMove={pointerMove}
               onPointerUp={pointerEnd}
               onPointerCancel={pointerEnd}
-              onLostPointerCapture={() => {
-                pointer.current = null;
-              }}
+              onLostPointerCapture={pointerCaptureLost}
             >
+              {scene}
               <div className="post-field-cloud post-field-cloud-one" aria-hidden="true" />
               <div className="post-field-cloud post-field-cloud-two" aria-hidden="true" />
               <div className="post-hill post-hill-one" aria-hidden="true" />
@@ -460,10 +479,19 @@ export function CloudPost({ offline }: CloudPostProps = {}) {
               ))}
               <div
                 className="post-player-cloud"
-                style={{ left: `${cloudPoint.x}%`, top: `${cloudPoint.y}%` }}
+                // Only the painted courier receives input; its transparent frame
+                // and caption must leave nearby active stars reachable.
+                style={{
+                  left: `${cloudPoint.x}%`,
+                  top: `${cloudPoint.y}%`,
+                  pointerEvents: 'none',
+                }}
                 aria-hidden="true"
               >
-                <CloudFriend sleepy={state.phase === 'paused'} />
+                <CloudFriend
+                  sleepy={state.phase === 'paused'}
+                  className={state.phase === 'playing' ? 'post-cloud-drag-handle' : ''}
+                />
                 <span>小云朵</span>
               </div>
               <div className="post-field-label" aria-hidden="true">
@@ -491,6 +519,7 @@ export function CloudPost({ offline }: CloudPostProps = {}) {
                 </div>
               )}
             </div>
+            {controls}
             <div className="post-journey-footer">
               <div className="post-star-pocket" aria-label={`已收集${state.steps}颗星光`}>
                 {Array.from({ length: 6 }, (_, index) => (

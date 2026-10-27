@@ -1,0 +1,176 @@
+.camera-intro-note {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  margin-top: 17px !important;
+  color: #607582;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.camera-intro-note > svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: #7495a5;
+}
+.camera-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  transition: opacity 0.25s;
+}
+.camera-scene * {
+  pointer-events: none;
+}
+.camera-scene[data-camera-active='true'] {
+  opacity: 1;
+}
+.camera-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #e4eff243, #eaf2e91f 55%, #e5efdc77);
+  pointer-events: none;
+}
+.camera-scene-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.camera-controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 13px 20px;
+  padding: 18px 20px;
+  margin-top: 17px;
+  border: 1px solid #d5e1e4;
+  border-radius: 16px;
+  background: #f0f5f2;
+  text-align: left;
+}
+.camera-control-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.camera-control-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e1edef;
+  color: #668b9e;
+}
+.camera-control-icon > svg {
+  width: 20px;
+  height: 20px;
+}
+.camera-control-heading h2 {
+  font-size: 14px;
+  color: #4f6e7c;
+  font-weight: 550;
+}
+.camera-control-heading p {
+  font-size: 11px;
+  color: #637d86;
+  margin-top: 2px;
+}
+.camera-control-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.camera-action {
+  min-height: 44px;
+  border: 1px solid #6b8f9f;
+  border-radius: 100px;
+  padding: 9px 17px;
+  color: #496e82;
+  font-size: 12px !important;
+  background: #fffdf7;
+  white-space: nowrap;
+}
+.camera-action:hover:not(:disabled) {
+  background: #e7f0f2;
+}
+.camera-action:disabled {
+  opacity: 0.55;
+}
+.camera-cancel {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: #647d86;
+  padding: 9px 3px;
+  font-size: 12px !important;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.camera-status {
+  grid-column: 1/-1;
+  border-top: 1px solid #d9e3e3;
+  padding-top: 12px;
+  color: #607582;
+}
+.camera-status > strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+.camera-status > p {
+  font-size: 12px;
+  line-height: 1.9;
+  margin-top: 4px;
+}
+.camera-status[data-camera-state='active'] > strong {
+  color: #4c7866;
+}
+.camera-status[data-camera-state='fallback'] > strong {
+  color: #8b6a4f;
+}
+@media (max-width: 600px) {
+  .camera-intro-note {
+    font-size: 11px;
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .camera-intro-note > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .camera-controls {
+    padding: 16px 15px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    border-radius: 13px;
+  }
+  .camera-control-heading h2 {
+    font-size: 14px;
+  }
+  .camera-control-heading p {
+    font-size: 11px;
+  }
+  .camera-control-actions {
+    padding-left: 47px;
+    flex-wrap: wrap;
+  }
+  .camera-action,
+  .camera-cancel {
+    font-size: 12px !important;
+  }
+  .camera-status > p {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .camera-scene {
+    transition: none;
+  }
+}
