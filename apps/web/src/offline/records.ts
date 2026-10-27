@@ -1,11 +1,6 @@
 import type { BlessingIndex, PostStorage } from '../post/recovery';
 import { uuid } from '../uuid';
-import {
-  getOfflineLocalStorage,
-  offlineDraftKey,
-  offlineProbeKey,
-  offlineRecordsKey,
-} from './storage';
+import { getOfflineLocalStorage, getOfflineStorageKeys, type OfflineNamespace } from './storage';
 
 export const offlineRecordLimit = 20;
 export const offlineRecordsMaxLength = 8192;
@@ -100,25 +95,30 @@ export class OfflineRecords {
   private current: OfflineRecordsSnapshot;
   private readonly listeners = new Set<() => void>();
   private canPersist = false;
+  private readonly backing: PostStorage | null;
+  private readonly keys: ReturnType<typeof getOfflineStorageKeys>;
 
-  constructor(private readonly backing: PostStorage | null = getOfflineLocalStorage()) {
+  constructor(backing?: PostStorage | null, namespace: OfflineNamespace = 'classic') {
+    this.keys = getOfflineStorageKeys(namespace);
+    this.backing = backing === undefined ? getOfflineLocalStorage() : backing;
+    const storage = this.backing;
     let records: OfflineRecord[] = [];
-    if (backing) {
+    if (storage) {
       try {
-        const raw = backing.getItem(offlineRecordsKey);
+        const raw = storage.getItem(this.keys.records);
         if (raw !== null) {
           const parsed = parseRecords(raw);
           if (parsed) records = parsed;
-          else backing.removeItem(offlineRecordsKey);
+          else storage.removeItem(this.keys.records);
         }
-        backing.setItem(offlineProbeKey, '1');
-        if (backing.getItem(offlineProbeKey) !== '1')
+        storage.setItem(this.keys.probe, '1');
+        if (storage.getItem(this.keys.probe) !== '1')
           throw new Error('Storage write could not be confirmed.');
-        backing.removeItem(offlineProbeKey);
+        storage.removeItem(this.keys.probe);
         this.canPersist = true;
       } catch {
         try {
-          backing.removeItem(offlineProbeKey);
+          storage.removeItem(this.keys.probe);
         } catch {
           /* Optional storage. */
         }
@@ -163,8 +163,8 @@ export class OfflineRecords {
     if (this.canPersist && this.backing) {
       try {
         const raw = JSON.stringify({ version: 1, records });
-        this.backing.setItem(offlineRecordsKey, raw);
-        if (this.backing.getItem(offlineRecordsKey) !== raw)
+        this.backing.setItem(this.keys.records, raw);
+        if (this.backing.getItem(this.keys.records) !== raw)
           throw new Error('Storage write could not be confirmed.');
       } catch {
         this.canPersist = false;
@@ -176,7 +176,7 @@ export class OfflineRecords {
 
   clear = (): void => {
     if (this.backing) {
-      for (const key of [offlineRecordsKey, offlineDraftKey]) {
+      for (const key of [this.keys.records, this.keys.draft]) {
         try {
           this.backing.removeItem(key);
           if (this.backing.getItem(key) !== null)

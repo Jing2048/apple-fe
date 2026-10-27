@@ -13,9 +13,11 @@ import { OfflineRecords, offlineRecordLimit, offlineRecordsMaxLength } from './r
 import {
   getOfflineDraftStorage,
   getOfflineLocalStorage,
+  getOfflineStorageKeys,
   offlineDraftKey,
   offlineProbeKey,
   offlineRecordsKey,
+  type OfflineNamespace,
 } from './storage';
 
 function storage() {
@@ -355,5 +357,161 @@ describe('isolated offline draft adapter', () => {
     expect(readPostDraft(adapter)).toBeNull();
     expect(() => clearPostDraft(adapter)).not.toThrow();
     expect(savePostDraft(getOfflineDraftStorage(null), ready, 0)).toBe(false);
+  });
+});
+
+describe('classic and new-year offline namespaces', () => {
+  it('preserves the original default keys and reads existing classic history without migration', () => {
+    expect(getOfflineStorageKeys()).toEqual({
+      records: 'cloud-post.offline.v1.records',
+      draft: 'cloud-post.offline.v1.draft',
+      probe: 'cloud-post.offline.v1.probe',
+    });
+    expect(getOfflineStorageKeys('classic')).toEqual({
+      records: offlineRecordsKey,
+      draft: offlineDraftKey,
+      probe: offlineProbeKey,
+    });
+    expect(getOfflineStorageKeys('new-year')).toEqual({
+      records: 'cloud-post.offline.new-year.v1.records',
+      draft: 'cloud-post.offline.new-year.v1.draft',
+      probe: 'cloud-post.offline.new-year.v1.probe',
+    });
+    expect(Object.isFrozen(getOfflineStorageKeys())).toBe(true);
+    expect(Object.isFrozen(getOfflineStorageKeys('new-year'))).toBe(true);
+    const backing = storage();
+    const saved = {
+      id: uuid(),
+      roundId: uuid(),
+      blessingIndex: 1,
+      createdAt: '2026-10-27T12:00:00.000Z',
+    };
+    backing.setItem(
+      'cloud-post.offline.v1.records',
+      JSON.stringify({ version: 1, records: [saved] }),
+    );
+    expect(new OfflineRecords(backing).getSnapshot().records).toEqual([saved]);
+    expect(new OfflineRecords(backing, 'new-year').getSnapshot().records).toEqual([]);
+    expect(backing.getItem('cloud-post.offline.v1.records')).not.toBeNull();
+    expect(backing.getItem('cloud-post.offline.new-year.v1.records')).toBeNull();
+  });
+
+  it('isolates the same round, blessing selection, recovery and clear in both directions', () => {
+    const backing = storage();
+    const classic = new OfflineRecords(backing);
+    const newYear = new OfflineRecords(backing, 'new-year');
+    const classicDraft = getOfflineDraftStorage(backing);
+    const newYearDraft = getOfflineDraftStorage(backing, 'new-year');
+    const round = uuid();
+    const classicCard = classic.record(round, 0)!;
+    const newYearCard = newYear.record(round.toUpperCase(), 2)!;
+    expect(classicCard.id).not.toBe(newYearCard.id);
+    expect(new OfflineRecords(backing).getSnapshot().records).toEqual([classicCard]);
+    expect(new OfflineRecords(backing, 'new-year').getSnapshot().records).toEqual([newYearCard]);
+    const ready = postReducer(createPostState(round), { type: 'LOADED' });
+    const progressed = postReducer(postReducer(ready, { type: 'START', now: 100 }), {
+      type: 'COLLECT',
+      cell: 0,
+      now: 200,
+    });
+    expect(savePostDraft(classicDraft, progressed, 0)).toBe(true);
+    expect(savePostDraft(newYearDraft, ready, 2)).toBe(true);
+    expect(readPostDraft(classicDraft)).toMatchObject({
+      blessingIndex: 0,
+      state: { roundId: round, phase: 'paused', steps: 1 },
+    });
+    expect(readPostDraft(newYearDraft)).toMatchObject({
+      blessingIndex: 2,
+      state: { roundId: round, phase: 'ready', steps: 0 },
+    });
+    backing.setItem(postRecoveryKey, 'online-draft');
+    newYear.clear();
+    expect(newYear.getSnapshot().records).toEqual([]);
+    expect(readPostDraft(newYearDraft)).toBeNull();
+    expect(new OfflineRecords(backing).getSnapshot().records).toEqual([classicCard]);
+    expect(readPostDraft(classicDraft)?.state.steps).toBe(1);
+    const anotherNewYearCard = newYear.record(round, 1)!;
+    expect(savePostDraft(newYearDraft, ready, 1)).toBe(true);
+    classic.clear();
+    expect(readPostDraft(classicDraft)).toBeNull();
+    expect(new OfflineRecords(backing, 'new-year').getSnapshot().records).toEqual([
+      anotherNewYearCard,
+    ]);
+    expect(readPostDraft(newYearDraft)?.blessingIndex).toBe(1);
+    expect(backing.getItem(postRecoveryKey)).toBe('online-draft');
+  });
+
+  it('rejects invalid scopes before any explicit or default storage access', () => {
+    const backing = storage();
+    const getter = vi.fn(() => backing);
+    vi.stubGlobal('window', Object.defineProperty({}, 'localStorage', { get: getter }));
+    for (const invalid of [
+      '',
+      'other',
+      'classic.records',
+      '../classic',
+      '__proto__',
+      null,
+    ] as unknown as OfflineNamespace[]) {
+      expect(() => getOfflineStorageKeys(invalid)).toThrow('Unsupported offline namespace');
+      expect(() => new OfflineRecords(backing, invalid)).toThrow('Unsupported offline namespace');
+      expect(() => getOfflineDraftStorage(backing, invalid)).toThrow(
+        'Unsupported offline namespace',
+      );
+      expect(() => new OfflineRecords(undefined, invalid)).toThrow('Unsupported offline namespace');
+      expect(() => getOfflineDraftStorage(undefined, invalid)).toThrow(
+        'Unsupported offline namespace',
+      );
+      expect(() => new OfflineRecords(null, invalid)).toThrow('Unsupported offline namespace');
+      expect(() => getOfflineDraftStorage(null, invalid)).toThrow('Unsupported offline namespace');
+    }
+    expect(getter).not.toHaveBeenCalled();
+    expect(backing.getItem).not.toHaveBeenCalled();
+    expect(backing.setItem).not.toHaveBeenCalled();
+    expect(backing.removeItem).not.toHaveBeenCalled();
+  });
+
+  it('contains corrupt new-year history and write failures without removing or changing classic data', () => {
+    const backing = storage();
+    const classic = new OfflineRecords(backing);
+    const classicCard = classic.record(uuid(), 0)!;
+    const newKeys = getOfflineStorageKeys('new-year');
+    backing.setItem(newKeys.records, 'corrupt-json');
+    const newYear = new OfflineRecords(backing, 'new-year');
+    expect(newYear.getSnapshot().records).toEqual([]);
+    expect(backing.getItem(newKeys.records)).toBeNull();
+    expect(new OfflineRecords(backing).getSnapshot().records).toEqual([classicCard]);
+    backing.setItem.mockImplementation((key, value) => {
+      if (key === newKeys.records) throw new Error('New-year write failed');
+      backing.data.set(key, value);
+    });
+    expect(newYear.record(uuid(), 2)).not.toBeNull();
+    expect(newYear.getSnapshot().persistence).toBe('memory');
+    const secondClassicCard = classic.record(uuid(), 1)!;
+    expect(classic.getSnapshot().persistence).toBe('local');
+    expect(new OfflineRecords(backing).getSnapshot().records).toEqual([
+      secondClassicCard,
+      classicCard,
+    ]);
+  });
+
+  it('defaults undefined to local storage while explicit null disables new-year persistence', () => {
+    const backing = storage();
+    const getter = vi.fn(() => backing);
+    vi.stubGlobal('window', Object.defineProperty({}, 'localStorage', { get: getter }));
+    expect(new OfflineRecords(null, 'new-year').getSnapshot().persistence).toBe('memory');
+    expect(getOfflineDraftStorage(null, 'new-year')).toBeNull();
+    expect(getter).not.toHaveBeenCalled();
+    const newYear = new OfflineRecords(undefined, 'new-year');
+    const card = newYear.record(uuid(), 1)!;
+    expect(newYear.getSnapshot().persistence).toBe('local');
+    expect(JSON.parse(backing.getItem(getOfflineStorageKeys('new-year').records)!).records).toEqual(
+      [card],
+    );
+    const ready = postReducer(createPostState(uuid()), { type: 'LOADED' });
+    expect(savePostDraft(getOfflineDraftStorage(undefined, 'new-year'), ready, 2)).toBe(true);
+    expect(backing.getItem(getOfflineStorageKeys('new-year').draft)).not.toBeNull();
+    expect(backing.getItem(offlineRecordsKey)).toBeNull();
+    expect(backing.getItem(offlineDraftKey)).toBeNull();
   });
 });

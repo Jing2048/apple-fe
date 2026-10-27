@@ -4,10 +4,16 @@
   --post-blue: #6c9cb6;
   --post-paper: #fffdf6;
   --post-coral: #d89a83;
+  --post-page-surface: #f9f8f2;
+  --post-copy: #607582;
+  --post-action: #4c7890;
+  --post-action-hover: #3d697f;
+  --post-action-ink: #fffdf8;
+  --post-focus: #779db5;
   box-sizing: border-box;
   min-height: 100vh;
   min-height: 100svh;
-  background: #f9f8f2;
+  background: var(--post-page-surface);
   color: var(--post-ink);
   font:
     14px/1.65 -apple-system,
@@ -51,7 +57,7 @@
 .post-page button:focus-visible,
 .post-page a:focus-visible,
 .post-page summary:focus-visible {
-  outline: 3px solid #779db5;
+  outline: 3px solid var(--post-focus);
   outline-offset: 5px;
 }
 .post-page ::selection {
@@ -341,7 +347,7 @@
   border: 1px solid #6b98ac;
   border-radius: 100px;
   background: #6d9db3;
-  color: #fffdf8;
+  color: var(--post-action-ink);
   font-size: 12px !important;
   font-weight: 500;
   letter-spacing: 1.2px;
@@ -580,6 +586,10 @@
 /* SVG viewports can intercept empty space; only these two painted shapes are grips. */
 .post-player-cloud > svg.post-cloud-drag-handle [data-cloud-grip] {
   pointer-events: visiblePainted;
+}
+.post-new-year-scarf {
+  display: none;
+  pointer-events: none;
 }
 .post-player-cloud > span {
   pointer-events: none;
@@ -1548,20 +1558,20 @@
 
 /* Keep the paper-and-sky palette in decoration; readable copy stays above it. */
 .post-primary {
-  background: #4c7890;
-  border-color: #4c7890;
+  background: var(--post-action);
+  border-color: var(--post-action);
   font-size: 14px !important;
   min-height: 50px;
 }
 .post-primary:hover:not(:disabled) {
-  background: #3d697f;
+  background: var(--post-action-hover);
 }
 .post-intro,
 .post-journey-heading > div > p:last-child,
 .post-journey-footer p,
 .post-card-message p {
   font-size: 14px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-journey-footer p > span {
   font-size: 12px;
@@ -1569,7 +1579,7 @@
 }
 .post-status-line {
   font-size: 12px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-gentle-note {
   font-size: 12px;
@@ -1590,7 +1600,7 @@
 }
 .post-complete-intro {
   font-size: 14px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-card-to,
 .post-card-top > span {
@@ -1602,15 +1612,15 @@
 }
 .post-save-status > p {
   font-size: 12px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-privacy strong {
   font-size: 14px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-privacy p {
   font-size: 13px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-privacy-actions .post-text-button,
 .post-text-button {
@@ -1628,7 +1638,7 @@
 }
 .post-pause-paper p {
   font-size: 13px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-pause-paper .post-primary,
 .post-again {
@@ -1643,7 +1653,7 @@
 }
 .post-diagnostics-body {
   font-size: 12px;
-  color: #607582;
+  color: var(--post-copy);
 }
 .post-diagnostics-body code {
   font-size: 11px;

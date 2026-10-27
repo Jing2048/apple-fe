@@ -1,45 +1,46 @@
 import { test as base, expect, type Locator, type Page } from '@playwright/test';
 import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {
+  offlineArtifactPath as artifactPath,
+  offlineArtifactUrlFor,
+  offlineAuxiliaryBase as auxiliaryBase,
+  offlineScreenshotDirectory as screenshotDirectory,
+  offlineTheme,
+  offlineThemes,
+} from './theme.js';
 
-const artifactPath = resolve('.artifacts/offline/cloud-post-offline.html');
-const auxiliaryBase = process.env.OFFLINE_TEST_BASE_URL;
-if (auxiliaryBase) {
-  const url = new URL(auxiliaryBase);
-  if (
-    url.protocol !== 'http:' ||
-    !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) ||
-    url.username ||
-    url.password ||
-    url.search ||
-    url.hash
-  )
-    throw new Error('HTTP auxiliary acceptance requires an explicit loopback HTTP origin.');
-}
-const screenshotDirectory = auxiliaryBase ? '.artifacts/offline-http' : '.artifacts/offline';
-const recordKey = 'cloud-post.offline.v1.records';
-const draftKey = 'cloud-post.offline.v1.draft';
-const blessingButtons = ['寄给慢慢来的你', '寄给值得好运的你', '寄给认真生活的你'];
+const recordKey = `${offlineTheme.prefix}records`;
+const draftKey = `${offlineTheme.prefix}draft`;
+const blessingButtons = offlineTheme.blessingNames;
 const state = (page: Page) => page.getByRole('status', { name: '星光收集状态', exact: true });
 const saved = (page: Page) => page.getByRole('status', { name: '祝福保存状态', exact: true });
 const count = (page: Page) => page.getByRole('status', { name: '本机记录数量', exact: true });
 
-const test = base.extend<{ storageDenied: boolean; relocatedArtifact: boolean }>({
+const test = base.extend<{
+  storageDenied: boolean;
+  relocatedArtifact: boolean;
+  dualTheme: boolean;
+}>({
   storageDenied: [false, { option: true }],
   relocatedArtifact: [false, { option: true }],
-  page: async ({ page, context, storageDenied, relocatedArtifact }, use) => {
+  dualTheme: [false, { option: true }],
+  page: async ({ page, context, storageDenied, relocatedArtifact, dualTheme }, use) => {
     let temporaryDirectory: string | undefined;
     let target = artifactPath;
     if (relocatedArtifact) {
       temporaryDirectory = await mkdtemp(join(tmpdir(), 'cloud-post-offline-'));
-      target = join(temporaryDirectory, '云朵邮局 单文件演示.html');
+      target = join(temporaryDirectory, offlineTheme.relocatedFilename);
       await copyFile(artifactPath, target);
     }
     const artifactUrl = auxiliaryBase
-      ? new URL('cloud-post-offline.html', `${auxiliaryBase.replace(/\/$/, '')}/`).href
+      ? offlineArtifactUrlFor(offlineTheme.id)
       : pathToFileURL(target).href;
+    const mainDocuments = dualTheme
+      ? new Set([offlineArtifactUrlFor('classic'), offlineArtifactUrlFor('new-year')])
+      : new Set([artifactUrl]);
     const transportAttempts: string[] = [];
     const unexpectedRequests: { protocol: string; type: string }[] = [];
     const pageErrors: string[] = [];
@@ -48,7 +49,7 @@ const test = base.extend<{ storageDenied: boolean; relocatedArtifact: boolean }>
       const url = new URL(request.url());
       url.hash = '';
       const permitted =
-        url.href === artifactUrl &&
+        mainDocuments.has(url.href) &&
         request.isNavigationRequest() &&
         request.frame() === page.mainFrame();
       if (!permitted)
@@ -115,6 +116,12 @@ const test = base.extend<{ storageDenied: boolean; relocatedArtifact: boolean }>
       await reloadArtifact(page);
       await expect(state(page)).toContainText('准备收集星光');
       await expect(page.getByText('离线演示', { exact: true })).toBeVisible();
+      if (offlineTheme.id === 'new-year') {
+        await expect(page.locator('.post-page')).toHaveAttribute('data-post-theme', 'new-year');
+        await expect(page.locator('.post-brand')).toContainText('新春云朵邮局');
+        await expect(page.getByRole('heading', { level: 1 })).toContainText('把新意，');
+        await expect(page.getByRole('heading', { level: 1 })).toContainText('带回家');
+      }
       expect(await page.evaluate(() => navigator.onLine)).toBe(false);
       await use(page);
     } finally {
@@ -206,6 +213,7 @@ test('单文件三站六星、三张祝福、重复游玩两条本机记录与�
   }
   expect(new Set(titles).size).toBe(3);
   expect(titles.every((title) => title.length > 0)).toBe(true);
+  expect(titles).toEqual([...offlineTheme.blessingTitles]);
   await page.screenshot({ path: `${screenshotDirectory}/${variant}-complete.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await activate(page.getByRole('button', { name: '重新寄一封', exact: true }), isMobile);
@@ -305,18 +313,18 @@ test('已写入后删除被拒绝：清空当前列表且不从旧完成草稿�
   context,
   isMobile,
 }) => {
-  await context.addInitScript(() => {
-    const scope = globalThis as typeof globalThis & { __offlineRejectRemoval?: boolean };
-    const original = Storage.prototype.removeItem;
-    Storage.prototype.removeItem = function (this: Storage, key: string) {
-      if (
-        scope.__offlineRejectRemoval &&
-        ['cloud-post.offline.v1.records', 'cloud-post.offline.v1.draft'].includes(key)
-      )
-        throw new DOMException('Test storage deletion was denied.', 'SecurityError');
-      return original.call(this, key);
-    };
-  });
+  await context.addInitScript(
+    ({ recordKey, draftKey }) => {
+      const scope = globalThis as typeof globalThis & { __offlineRejectRemoval?: boolean };
+      const original = Storage.prototype.removeItem;
+      Storage.prototype.removeItem = function (this: Storage, key: string) {
+        if (scope.__offlineRejectRemoval && [recordKey, draftKey].includes(key))
+          throw new DOMException('Test storage deletion was denied.', 'SecurityError');
+        return original.call(this, key);
+      };
+    },
+    { recordKey, draftKey },
+  );
   await reloadArtifact(page);
   await expect(state(page)).toContainText('准备收集星光');
   await start(page, isMobile);
@@ -410,10 +418,91 @@ test.describe('复制唯一 HTML 后双击', () => {
   );
   test.use({ relocatedArtifact: true });
   test('中文空格文件名且无任何相邻资源仍可完整游玩', async ({ page, isMobile }) => {
-    expect(decodeURI(page.url())).toContain('云朵邮局 单文件演示.html');
+    expect(decodeURI(page.url())).toContain(offlineTheme.relocatedFilename);
     await start(page, isMobile);
     await collect(page, isMobile);
     await expectLocalSave(page);
     await expectRecords(page, 1);
   });
 });
+
+if (offlineTheme.id === 'new-year') {
+  test.describe('两份独立HTML的同源隔离', () => {
+    test.use({ dualTheme: true });
+    test.skip(!auxiliaryBase, 'Same-origin storage isolation is an explicit HTTP auxiliary check.');
+    test('记录与半程草稿分别恢复，同index用各自卡片，清新年不删原版', async ({
+      page,
+      isMobile,
+    }) => {
+      const classicUrl = offlineArtifactUrlFor('classic');
+      const newYearUrl = offlineArtifactUrlFor('new-year');
+      expect(new URL(classicUrl).origin).toBe(new URL(newYearUrl).origin);
+      const navigate = async (url: string) => {
+        await page.context().setOffline(false);
+        try {
+          await page.goto(url);
+        } finally {
+          await page.context().setOffline(true);
+        }
+        expect(await page.evaluate(() => navigator.onLine)).toBe(false);
+      };
+      const heading = () => page.getByRole('article', { name: '星光祝福卡' }).getByRole('heading');
+
+      await navigate(classicUrl);
+      await expect(state(page)).toContainText('准备收集星光');
+      await start(page, isMobile);
+      await collect(page, isMobile);
+      await expectLocalSave(page);
+      await activate(
+        page.getByRole('button', { name: offlineThemes.classic.blessingNames[1], exact: true }),
+        isMobile,
+      );
+      await expect(heading()).toHaveText(offlineThemes.classic.blessingTitles[1]);
+      await expectRecords(page, 1);
+      await expect(await openRecords(page)).toContainText(offlineThemes.classic.blessingTitles[1]);
+
+      await navigate(newYearUrl);
+      await expect(state(page)).toContainText('准备收集星光');
+      await expectRecords(page, 0);
+      await start(page, isMobile);
+      await collect(page, isMobile, 1, 3);
+
+      await navigate(classicUrl);
+      await expectLocalSave(page);
+      await expect(heading()).toHaveText(offlineThemes.classic.blessingTitles[1]);
+      await expectRecords(page, 1);
+
+      await navigate(newYearUrl);
+      await expect(state(page)).toContainText('星光收集已暂停');
+      await expect(page.getByRole('status', { name: '星光数量' })).toHaveText('3 / 6 颗星光');
+      await activate(page.getByRole('button', { name: '继续收集', exact: true }), isMobile);
+      await collect(page, isMobile, 4, 6);
+      await expectLocalSave(page);
+      await activate(
+        page.getByRole('button', { name: offlineThemes['new-year'].blessingNames[1], exact: true }),
+        isMobile,
+      );
+      await expect(heading()).toHaveText(offlineThemes['new-year'].blessingTitles[1]);
+      await expectRecords(page, 1);
+      const newYearRecords = await openRecords(page);
+      await expect(newYearRecords.getByRole('listitem')).toHaveCount(1);
+      await expect(newYearRecords).toContainText(offlineThemes['new-year'].blessingNames[1]);
+      await expect(newYearRecords).toContainText(offlineThemes['new-year'].blessingTitles[1]);
+      await expect(newYearRecords).not.toContainText(offlineThemes.classic.blessingTitles[1]);
+
+      page.once('dialog', (dialog) => dialog.accept());
+      await page.getByRole('button', { name: '清除本机记录', exact: true }).click();
+      await expect(state(page)).toContainText('准备收集星光');
+      await expectRecords(page, 0);
+      await navigate(classicUrl);
+      await expectLocalSave(page);
+      await expect(heading()).toHaveText(offlineThemes.classic.blessingTitles[1]);
+      await expectRecords(page, 1);
+      const classicRecords = await openRecords(page);
+      await expect(classicRecords.getByRole('listitem')).toHaveCount(1);
+      await expect(classicRecords).toContainText(offlineThemes.classic.blessingNames[1]);
+      await expect(classicRecords).toContainText(offlineThemes.classic.blessingTitles[1]);
+      await expect(classicRecords).not.toContainText(offlineThemes['new-year'].blessingTitles[1]);
+    });
+  });
+}

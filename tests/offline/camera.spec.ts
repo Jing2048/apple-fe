@@ -1,7 +1,10 @@
 import { test as base, expect, type CDPSession, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import {
+  offlineArtifactUrl as target,
+  offlineAuxiliaryBase as auxiliary,
+  offlineScreenshotDirectory,
+} from './theme.js';
 
 type Probe = {
   requests: number;
@@ -21,10 +24,6 @@ type Controls = {
 };
 type ProbeWindow = typeof globalThis & { __syntheticCamera: Controls };
 
-const auxiliary = process.env.OFFLINE_TEST_BASE_URL;
-const target = auxiliary
-  ? new URL('cloud-post-offline.html', `${auxiliary.replace(/\/$/, '')}/`).href
-  : pathToFileURL(resolve('.artifacts/offline/cloud-post-offline.html')).href;
 const camera = (page: Page) => page.getByRole('status', { name: '相机状态', exact: true });
 const video = (page: Page) => page.getByLabel('相机实景画面', { exact: true });
 const openCamera = (page: Page) => page.getByRole('button', { name: '开启相机实景', exact: true });
@@ -293,11 +292,14 @@ test('合成视频真实播放、重复开关、视频背景不拦拖星且完�
   await openCamera(page).click();
   await expectActive(page);
   if (!isMobile) {
-    await mkdir('.artifacts/offline-http', { recursive: true });
+    await mkdir(offlineScreenshotDirectory, { recursive: true });
     await page
       .getByRole('group', { name: '拖动云朵收集星光', exact: true })
       .scrollIntoViewIfNeeded();
-    await page.screenshot({ path: '.artifacts/offline-http/camera-synthetic.png', fullPage: true });
+    await page.screenshot({
+      path: `${offlineScreenshotDirectory}/camera-synthetic.png`,
+      fullPage: true,
+    });
   }
   await closeCamera(page).click();
   await expectStopped(page, 1);

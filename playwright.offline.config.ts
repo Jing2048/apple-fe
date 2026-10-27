@@ -1,9 +1,10 @@
 import { defineConfig } from '@playwright/test';
+import { offlineAuxiliaryBase, offlineReportPrefix, offlineTheme } from './tests/offline/theme.js';
 
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 const launchOptions = executablePath ? { executablePath } : {};
-const httpAuxiliary = Boolean(process.env.OFFLINE_TEST_BASE_URL);
-const reportPrefix = httpAuxiliary ? 'offline-http' : 'offline';
+const httpAuxiliary = Boolean(offlineAuxiliaryBase);
+const reportPrefix = offlineReportPrefix;
 
 export default defineConfig({
   testDir: './tests/offline',
@@ -11,6 +12,8 @@ export default defineConfig({
   metadata: {
     acceptanceMode: httpAuxiliary ? 'HTTP auxiliary; not file:// validation' : 'file:// offline',
     startsServer: false,
+    theme: offlineTheme.id,
+    artifact: offlineTheme.filename,
   },
   fullyParallel: false,
   workers: 1,

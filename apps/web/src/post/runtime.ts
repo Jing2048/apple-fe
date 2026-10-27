@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Campaign } from '@apple/contracts';
 import type { BlessingIndex, PostStorage } from './recovery';
+import type { PostTheme } from './themes';
 
 /** Fixed at mount: the standalone demo supplies local data and its own receipt view. */
 export interface OfflinePostRuntime {
@@ -11,6 +12,7 @@ export interface OfflinePostRuntime {
 
 export interface CloudPostProps {
   offline?: OfflinePostRuntime;
+  theme?: PostTheme;
   /** Optional playfield background; it must not intercept pointer input. */
   scene?: ReactNode;
   /** Optional controls rendered outside the playfield, only during the journey. */

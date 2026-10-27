@@ -1,0 +1,258 @@
+/* Original seasonal palette; the existing layout, input geometry and motion stay intact. */
+:is(.post-page, .offline-experience)[data-post-theme='new-year'] {
+  --post-ink: #281b19;
+  --post-soft-ink: #70594e;
+  --post-blue: #b82025;
+  --post-paper: #fffaf0;
+  --post-coral: #b82025;
+  --post-page-surface: #f8f3e9;
+  --post-copy: #70594e;
+  --post-action: #b82025;
+  --post-action-hover: #951b21;
+  --post-action-ink: #fffaf0;
+  --post-focus: #b82025;
+  --post-cloud-top: #fffefa;
+  --post-cloud-bottom: #f5ead7;
+  --post-cloud-outline: #dbc8aa;
+  --post-cloud-shadow: #c49a78;
+  --post-cloud-underlay: #e6cfb3;
+  --post-cloud-face: #4f352c;
+  --post-cloud-blush: #e8afa2;
+  --post-satchel: #b82025;
+  --post-satchel-strap: #aa805b;
+  --post-satchel-fold: #f5cbb0;
+  --post-scarf-trim: #d8b46a;
+  --post-star: #d8b46a;
+  --post-route: #d8b46a;
+  --post-plane-fill: #fffcf4;
+  --post-plane-fold: #eedec2;
+  --post-plane-shade: #d8bf96;
+  --post-plane-line: #b58f62;
+  --new-year-gold: #d8b46a;
+  --new-year-line: #dfcdb3;
+  background: #f8f3e9;
+  color: var(--post-ink);
+}
+:is(.post-page, .offline-experience)[data-post-theme='new-year'] :is(h1, h2, h3) {
+  color: var(--post-ink);
+}
+:is(.post-page, .offline-experience)[data-post-theme='new-year'] :is(p, time, small) {
+  color: var(--post-soft-ink);
+}
+.post-page[data-post-theme='new-year']
+  :is(
+    .post-header-note,
+    .post-kicker,
+    .post-status-line,
+    .post-progress-text,
+    .post-hero-caption,
+    .post-player-cloud > span,
+    .post-field-label,
+    .post-card-to,
+    .post-card-top > span,
+    .post-footer,
+    .post-diagnostics,
+    .post-privacy strong,
+    .camera-intro-note,
+    .camera-cancel,
+    .camera-status
+  ) {
+  color: var(--post-soft-ink);
+  border-color: var(--new-year-line);
+}
+.post-page[data-post-theme='new-year']
+  :is(
+    .post-brand-icon,
+    .post-title-dot,
+    .post-privacy-icon,
+    .post-text-button,
+    .post-save-status > strong,
+    .camera-control-icon,
+    .camera-status > strong
+  ) {
+  color: #b82025;
+}
+.post-page[data-post-theme='new-year'] :is(.post-primary, .post-primary:disabled) {
+  color: #fffaf0;
+  background: #b82025;
+  border-color: #b82025;
+  box-shadow: 0 6px 11px #8e201719;
+}
+.post-page[data-post-theme='new-year'] .post-primary:hover:not(:disabled) {
+  background: #951b21;
+  border-color: #951b21;
+}
+.post-page[data-post-theme='new-year'] :is(button, a, summary):focus-visible,
+.offline-experience[data-post-theme='new-year'] button:focus-visible {
+  outline-color: #b82025;
+}
+.post-page[data-post-theme='new-year'] ::selection {
+  color: #281b19;
+  background: #eed6bd;
+}
+.post-page[data-post-theme='new-year'] .post-hero-art::before {
+  background: radial-gradient(ellipse at 50% 70%, #efd8bb 0, #f4e8d6 48%, #f8f3e900 73%);
+}
+.post-page[data-post-theme='new-year'] .post-hero-cloud {
+  filter: drop-shadow(0 13px 13px #a7835924);
+}
+.post-page[data-post-theme='new-year'] .post-new-year-scarf {
+  display: inline;
+}
+.post-page[data-post-theme='new-year'] :is(.post-flight-path path, .post-constellation path) {
+  stroke: var(--post-route);
+}
+.post-page[data-post-theme='new-year']
+  :is(
+    .post-hero-star,
+    .post-card-spark,
+    .post-mini-star,
+    .post-header-note > span,
+    .post-footer i
+  ) {
+  color: var(--new-year-gold);
+}
+.post-page[data-post-theme='new-year']
+  :is(.post-floating-envelope, .post-blessing-card, .post-pause-paper) {
+  background: #fffaf0;
+  border-color: var(--new-year-line);
+  box-shadow:
+    0 14px 26px #96734e16,
+    4px 5px 0 #e9dcc5;
+}
+.post-page[data-post-theme='new-year'] .post-floating-envelope i {
+  background: #b82025;
+  color: #fffaf0;
+}
+.post-page[data-post-theme='new-year'] .post-sun,
+.post-page[data-post-theme='new-year'] .post-play-field::before {
+  background: #ecd39a;
+  box-shadow: 0 0 0 12px #e9c78026;
+}
+.post-page[data-post-theme='new-year'] :is(.post-distant-cloud, .post-field-cloud) {
+  background: #fffaf0b3;
+}
+.post-page[data-post-theme='new-year'] .post-play-field {
+  background: linear-gradient(168deg, #efdcd0, #f5ebdd 63%, #f8f3e9);
+  border-color: var(--new-year-line);
+}
+.post-page[data-post-theme='new-year'] .post-hill-one {
+  background: #ead3b8;
+}
+.post-page[data-post-theme='new-year'] .post-hill-two {
+  background: #efe0c9;
+}
+.post-page[data-post-theme='new-year'] .post-star-button {
+  color: var(--new-year-gold);
+  background: radial-gradient(circle, #fff4d8d9, #fff4d800 70%);
+}
+.post-page[data-post-theme='new-year'] .post-star-button > svg {
+  filter: drop-shadow(0 1px 1px #89602f70);
+}
+.post-page[data-post-theme='new-year'] .post-star-button:hover:not(:disabled) {
+  color: #bd8b35;
+}
+.post-page[data-post-theme='new-year']
+  :is(.post-star-button.post-star-collected, .post-star-pocket > svg) {
+  color: #cabaa3;
+}
+.post-page[data-post-theme='new-year'] .post-star-pocket > .post-pocket-filled {
+  color: var(--new-year-gold);
+}
+.post-page[data-post-theme='new-year'] .post-star-collected > span {
+  color: #72533b;
+}
+.post-page[data-post-theme='new-year'] .post-player-cloud {
+  filter: drop-shadow(0 8px 7px #9a633b1c);
+}
+.post-page[data-post-theme='new-year'] .post-pause-overlay {
+  background: #f4e7d6c9;
+}
+.post-page[data-post-theme='new-year'] :is(.post-pause-moon, .post-postmark) {
+  color: #a14231;
+  border-color: #b97456;
+}
+.post-page[data-post-theme='new-year'] .post-postmark::before,
+.post-page[data-post-theme='new-year'] .post-blessing-card::before {
+  border-color: #d6b88c;
+}
+.post-page[data-post-theme='new-year'] .post-stamp {
+  background: #f3e5ce;
+  border-color: #d6b88c;
+}
+.post-page[data-post-theme='new-year'] .post-stamp span {
+  color: #8c5541;
+}
+.post-page[data-post-theme='new-year']
+  :is(.post-small-button, .post-blessing-picker button, .post-pause-button, .camera-action) {
+  color: #9e2428;
+  background: #fffaf0;
+  border-color: #d3b8a1;
+}
+.post-page[data-post-theme='new-year']
+  :is(.post-blessing-picker button[aria-pressed='true'], .camera-action:hover:not(:disabled)) {
+  color: #9e2428;
+  background: #f3e1d6;
+  border-color: #b82025;
+}
+.post-page[data-post-theme='new-year'] .post-save-check {
+  color: #9e2428;
+  background: #f0ddd0;
+}
+.post-page[data-post-theme='new-year'] :is(.post-diagnostics, .post-privacy, .camera-status) {
+  border-color: var(--new-year-line);
+}
+.post-page[data-post-theme='new-year'] .post-diagnostics-body :is(dt, code) {
+  color: var(--post-soft-ink);
+}
+.post-page[data-post-theme='new-year'] .post-text-button {
+  text-decoration-color: #cfaa8b;
+}
+.post-page[data-post-theme='new-year'] .camera-scene::after {
+  background: linear-gradient(180deg, #f8f3e92e, #f8f3e90f 55%, #eadcc150);
+}
+.post-page[data-post-theme='new-year'] .camera-controls {
+  background: #f5eadd;
+  border-color: var(--new-year-line);
+}
+.post-page[data-post-theme='new-year'] .camera-control-icon {
+  background: #ead9c1;
+}
+.post-page[data-post-theme='new-year'] .camera-intro-note > svg {
+  color: #a34535;
+}
+.offline-experience[data-post-theme='new-year']
+  :is(.offline-note, .offline-records, .offline-clear-status) {
+  color: #281b19;
+  border-color: var(--new-year-line);
+}
+.offline-experience[data-post-theme='new-year'] .offline-note {
+  background: #f1e5d2;
+}
+.offline-experience[data-post-theme='new-year'] .offline-note strong {
+  background: #b82025;
+  color: #fffaf0;
+}
+.offline-experience[data-post-theme='new-year'] :is(.offline-note span, .offline-records time) {
+  color: var(--post-soft-ink);
+}
+.offline-experience[data-post-theme='new-year'] .offline-actions button {
+  background: #fffaf0;
+  color: #9e2428;
+  border-color: #d3b8a1;
+}
+.offline-experience[data-post-theme='new-year'] .offline-actions button:hover {
+  background: #f3e1d6;
+}
+.offline-experience[data-post-theme='new-year'] .offline-records {
+  background: #fffaf0;
+}
+.offline-experience[data-post-theme='new-year'] .offline-records li {
+  border-color: var(--new-year-line);
+}
+.offline-experience[data-post-theme='new-year'] .offline-records li > span {
+  color: #a34535;
+}
+.offline-experience[data-post-theme='new-year'] .offline-clear-status {
+  background: #f7e9ce;
+}

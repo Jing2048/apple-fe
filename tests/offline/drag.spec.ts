@@ -1,14 +1,11 @@
 import { test as base, expect, type CDPSession, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-
-const artifact = resolve('.artifacts/offline/cloud-post-offline.html');
-const auxiliary = process.env.OFFLINE_TEST_BASE_URL;
-const target = auxiliary
-  ? new URL('cloud-post-offline.html', `${auxiliary.replace(/\/$/, '')}/`).href
-  : pathToFileURL(artifact).href;
+import {
+  offlineArtifactPath as artifact,
+  offlineArtifactUrl as target,
+  offlineAuxiliaryBase as auxiliary,
+} from './theme.js';
 
 const test = base.extend({
   page: async ({ page, context }, use, testInfo) => {

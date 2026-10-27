@@ -10,7 +10,7 @@ import {
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Campaign } from '@apple/contracts';
-import { POST_BLESSINGS } from '../post/CloudPost';
+import { POST_THEMES } from '../post/themes';
 import { CameraPost } from '../camera/CameraPost';
 import type { OfflinePostRuntime } from '../post/runtime';
 import type { BlessingIndex } from '../post/recovery';
@@ -19,16 +19,18 @@ import { getOfflineDraftStorage } from './storage';
 import '../entry.css';
 import './offline.css';
 
+const themeId = import.meta.env.VITE_POST_THEME === 'new-year' ? 'new-year' : 'classic';
+const theme = POST_THEMES[themeId];
 const campaign: Campaign = {
   id: 'cloud-post',
-  version: 'cloud-post-offline-v1',
-  title: '云朵邮局 · 离线演示',
+  version: themeId === 'classic' ? 'cloud-post-offline-v1' : 'cloud-post-offline-new-year-v1',
+  title: `${theme.brand} · 离线演示`,
   interactions: ['swipe'],
   assets: [],
   privacy: { analyticsOptional: true },
 };
-const records = new OfflineRecords();
-const draftStorage = getOfflineDraftStorage();
+const records = new OfflineRecords(undefined, themeId);
+const draftStorage = getOfflineDraftStorage(undefined, themeId);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -130,11 +132,15 @@ function OfflineExperience() {
     );
   };
   return (
-    <>
+    <div className="offline-experience" data-post-theme={theme.id}>
       <aside className="offline-note" aria-label="离线演示说明">
         <div>
           <strong>离线演示</strong>
-          <p>一封放在本机的星光。无需联网，没有数据上传。</p>
+          <p>
+            {themeId === 'new-year'
+              ? '一封放在本机的新岁祝福。无需联网，没有数据上传。'
+              : '一封放在本机的星光。无需联网，没有数据上传。'}
+          </p>
           <span>
             {snapshot.persistence === 'local'
               ? '本机记录可用 · 仅限当前浏览器'
@@ -171,8 +177,8 @@ function OfflineExperience() {
                 <li key={item.id}>
                   <span aria-hidden="true">✦</span>
                   <div>
-                    <strong>{POST_BLESSINGS[item.blessingIndex].name}</strong>
-                    <p>{POST_BLESSINGS[item.blessingIndex].title}</p>
+                    <strong>{theme.blessings[item.blessingIndex].name}</strong>
+                    <p>{theme.blessings[item.blessingIndex].title}</p>
                   </div>
                   <time dateTime={item.createdAt}>
                     {new Date(item.createdAt).toLocaleString('zh-CN')}
@@ -185,12 +191,12 @@ function OfflineExperience() {
           )}
         </section>
       )}
-      <CameraPost key={generation} offline={runtime} />
-    </>
+      <CameraPost key={generation} offline={runtime} theme={theme} />
+    </div>
   );
 }
 
-document.title = '云朵邮局 · 离线演示';
+document.title = `${theme.brand} · 离线演示`;
 const root = document.getElementById('root');
 if (!root) throw new Error('Offline application root is missing');
 createRoot(root).render(

@@ -11,7 +11,9 @@ import { activeStarIds, createPostState, postReducer, STAR_GROUPS } from './logi
 import { getPostStorage, readPostDraft, savePostDraft, type BlessingIndex } from './recovery';
 import { PostReceipt } from './PostReceipt';
 import type { CloudPostProps } from './runtime';
+import { POST_THEMES } from './themes';
 import './post.css';
+import './new-year.css';
 
 const campaignId = 'cloud-post';
 const releaseId: string = import.meta.env.VITE_RELEASE_ID ?? 'development';
@@ -35,27 +37,11 @@ const phaseLabels: Record<Phase, string> = {
   completed: '星光已收集完成',
   error: '邮局暂时没有打开',
 };
-const blessings = [
-  {
-    title: '愿你慢慢来，也会闪闪发光。',
-    lines: ['不必追上每一阵风，', '你的步调，也有自己的晴天。'],
-    name: '寄给慢慢来的你',
-  },
-  {
-    title: '愿小小的好运，恰好落在你身边。',
-    lines: ['把今天的温柔收进口袋，', '下一站，会遇见新的好事。'],
-    name: '寄给值得好运的你',
-  },
-  {
-    title: '愿你被生活温柔以待。',
-    lines: ['忙碌的日子也别忘了，', '留一点点星光，照亮自己。'],
-    name: '寄给认真生活的你',
-  },
-] as const;
-export const POST_BLESSINGS = blessings;
+export const POST_BLESSINGS = POST_THEMES.classic.blessings;
 
 export function CloudPost({
   offline,
+  theme = POST_THEMES.classic,
   scene,
   controls,
   introNote,
@@ -299,18 +285,25 @@ export function CloudPost({
   };
   const groupIndex = Math.min(2, Math.floor(state.steps / 2));
   const group = STAR_GROUPS[groupIndex]!;
+  const station = theme.stations[groupIndex]!;
+  const blessings = theme.blessings;
   const blessing = blessings[blessingIndex];
   const journey = state.phase === 'playing' || state.phase === 'paused';
 
   return (
-    <div className="post-page" id="cloud-post" ref={page}>
+    <div className="post-page" data-post-theme={theme.id} id="cloud-post" ref={page}>
       <header className="post-header">
-        <a href={offline ? '#cloud-post' : '/'} className="post-brand" aria-label="云朵邮局首页">
+        <a
+          href={offline ? '#cloud-post' : '/'}
+          className="post-brand"
+          aria-label={`${theme.brand}首页`}
+        >
           <span className="post-brand-icon" aria-hidden="true">
             ☁
           </span>
           <span>
-            云朵邮局<small>CLOUD POST OFFICE</small>
+            {theme.brand}
+            <small>{theme.brandEnglish}</small>
           </span>
         </a>
         <span className={`post-header-note${offline ? ' post-offline-label' : ''}`}>
@@ -334,16 +327,17 @@ export function CloudPost({
 
         {state.phase !== 'completed' && !journey && (
           <section className="post-welcome" aria-labelledby="post-welcome-title">
-            <p className="post-kicker">一封不用着急抵达的信</p>
+            <p className="post-kicker">{theme.heroKicker}</p>
             <h1 id="post-welcome-title">
-              把一点点星光，
+              {theme.heroTitle[0]}
               <br />
-              寄给今天的自己<span className="post-title-dot">。</span>
+              {theme.heroTitle[1]}
+              <span className="post-title-dot">。</span>
             </h1>
             <p className="post-intro">
-              陪小云朵走一小段路，收集六颗星光。
+              {theme.heroIntro[0]}
               <br />
-              把心里的晴天，装进一封小小的祝福里。
+              {theme.heroIntro[1]}
             </p>
             <div className="post-hero-art" aria-hidden="true">
               <div className="post-sun" />
@@ -353,7 +347,7 @@ export function CloudPost({
                 <path
                   d="M100 211c99 62 180-151 278-112s88 161 188 73 112-43 135-8"
                   fill="none"
-                  stroke="#9fc1d1"
+                  stroke="var(--post-route, #9fc1d1)"
                   strokeWidth="2"
                   strokeDasharray="4 8"
                   strokeLinecap="round"
@@ -365,10 +359,10 @@ export function CloudPost({
               <Star className="post-hero-star post-hero-star-three" />
               <CloudFriend className="post-hero-cloud" />
               <div className="post-floating-envelope">
-                <span>TO: 今天的你</span>
+                <span>{theme.envelopeTo}</span>
                 <i>♡</i>
               </div>
-              <span className="post-hero-caption">你的云朵邮差，已经准备好啦</span>
+              <span className="post-hero-caption">{theme.heroCaption}</span>
             </div>
             {state.phase === 'error' ? (
               <div className="post-load-error" role="alert">
@@ -409,8 +403,8 @@ export function CloudPost({
             <div className="post-journey-heading">
               <div>
                 <p className="post-kicker">第 {groupIndex + 1} 站 / 共三站</p>
-                <h1 id="post-journey-title">{group.label}</h1>
-                <p>{group.hint}</p>
+                <h1 id="post-journey-title">{station.label}</h1>
+                <p>{station.hint}</p>
               </div>
               <button
                 type="button"
@@ -449,7 +443,7 @@ export function CloudPost({
               >
                 <path
                   d="M70 330Q160 120 360 230T750 140"
-                  stroke="#b2cedd"
+                  stroke="var(--post-route, #b2cedd)"
                   strokeWidth="1.5"
                   strokeDasharray="3 10"
                   fill="none"
@@ -540,20 +534,21 @@ export function CloudPost({
 
         {state.phase === 'completed' && (
           <section className="post-complete" aria-labelledby="post-complete-title">
-            <p className="post-kicker">六颗星光，刚刚好</p>
+            <p className="post-kicker">{theme.completionKicker}</p>
             <h1 id="post-complete-title" tabIndex={-1} ref={completeTitle}>
-              你的星光，
+              {theme.completionTitle[0]}
               <br />
-              已经装进信里
+              {theme.completionTitle[1]}
             </h1>
-            <p className="post-complete-intro">选一句祝福，送给认真生活的自己。</p>
+            <p className="post-complete-intro">{theme.completionIntro}</p>
             <div className="post-card-wrap">
               <Star className="post-card-spark post-card-spark-one" />
               <Star className="post-card-spark post-card-spark-two" />
               <article className="post-blessing-card" aria-label="星光祝福卡">
                 <div className="post-card-top">
                   <span>
-                    一封晴天来信<small>A LITTLE LETTER OF LIGHT</small>
+                    {theme.cardLabel}
+                    <small>{theme.cardEnglish}</small>
                   </span>
                   <div className="post-stamp" aria-hidden="true">
                     <CloudFriend />
@@ -561,7 +556,7 @@ export function CloudPost({
                   </div>
                 </div>
                 <div className="post-card-message">
-                  <span className="post-card-to">TO: 今天的你</span>
+                  <span className="post-card-to">{theme.cardTo}</span>
                   <h2>{blessing.title}</h2>
                   <p>
                     {blessing.lines[0]}
@@ -570,9 +565,10 @@ export function CloudPost({
                   </p>
                 </div>
                 <div className="post-card-bottom">
-                  <span>愿所有小小的光，都有回响。</span>
+                  <span>{theme.cardClosing}</span>
                   <span className="post-postmark" aria-hidden="true">
-                    星光邮局<small>WITH LOVE</small>
+                    {theme.postmark}
+                    <small>WITH LOVE</small>
                   </span>
                 </div>
               </article>
@@ -644,7 +640,7 @@ export function CloudPost({
         )}
       </main>
       <footer className="post-footer">
-        <span>云朵邮局 · 把晴天寄给你</span>
+        <span>{theme.footer}</span>
         <span>
           {offline ? (
             '原创离线演示 · 祝福留在本机'

@@ -54,7 +54,7 @@ function CameraIcon() {
 }
 
 /** Camera preview is opt-in; the game, recovery and local cards keep their own state. */
-export function CameraPost({ offline }: CloudPostProps = {}) {
+export function CameraPost({ offline, theme }: CloudPostProps = {}) {
   const [camera] = useState(() => new CameraController());
   const snapshot = useSyncExternalStore(camera.subscribe, camera.getSnapshot);
   const [sceneActive, setSceneActive] = useState(false);
@@ -89,6 +89,7 @@ export function CameraPost({ offline }: CloudPostProps = {}) {
   return (
     <CloudPost
       {...(offline ? { offline } : {})}
+      {...(theme ? { theme } : {})}
       onSceneActiveChange={onSceneActiveChange}
       introNote={
         <p className="camera-intro-note">
