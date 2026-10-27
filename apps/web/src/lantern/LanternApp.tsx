@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { uuid } from '../uuid';
-import { LanternArt } from './LanternArt';
+import { LanternArt, lanternGeometry } from './LanternArt';
 import {
   createLanternState,
   lanternReducer,
@@ -66,6 +66,7 @@ type Gesture = {
   kind: 'unfold' | 'launch';
   startY: number;
   startProgress: number;
+  travel: number;
 };
 
 export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppProps = {}) {
@@ -78,6 +79,7 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
   const stateRef = useRef(state);
   const gesture = useRef<Gesture | null>(null);
   const handle = useRef<HTMLButtonElement>(null);
+  const paper = useRef<HTMLDivElement>(null);
   const workbench = useRef<HTMLElement>(null);
   const keyboardInput = useRef(false);
   const confirmTouch = useRef<{ id: number; x: number; y: number } | null>(null);
@@ -144,8 +146,11 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
     if (active.roundId !== stateRef.current.id || stateRef.current.phase !== active.kind) return;
     const distance = Math.max(0, active.startY - event.clientY);
     if (active.kind === 'unfold')
-      send.current({ type: 'OPEN_PROGRESS', progress: active.startProgress + distance / 180 });
-    else setReleaseProgress(Math.min(1, distance / 80));
+      send.current({
+        type: 'OPEN_PROGRESS',
+        progress: active.startProgress + distance / active.travel,
+      });
+    else setReleaseProgress(Math.min(1, distance / active.travel));
   };
   const pointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     const current = stateRef.current;
@@ -156,6 +161,13 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
       gesture.current
     )
       return;
+    const geometry = lanternGeometry(current.openProgress);
+    const renderedWidth = paper.current?.querySelector('svg')?.getBoundingClientRect().width ?? 0;
+    const travel =
+      current.phase === 'unfold'
+        ? (renderedWidth / geometry.viewBox.width) * geometry.unfoldTravel
+        : 80;
+    if (!Number.isFinite(travel) || travel <= 0) return;
     keyboardInput.current = false;
     gesture.current = {
       pointerId: event.pointerId,
@@ -163,6 +175,7 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
       kind: current.phase,
       startY: event.clientY,
       startProgress: current.openProgress,
+      travel,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -183,7 +196,7 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
       active.kind === 'launch' &&
       active.roundId === stateRef.current.id &&
       stateRef.current.phase === 'launch' &&
-      active.startY - event.clientY >= 80
+      active.startY - event.clientY >= active.travel
     )
       send.current({ type: 'RELEASE' });
   };
@@ -268,6 +281,8 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
       card.color === state.color &&
       card.pattern === state.pattern,
   );
+  const geometry = lanternGeometry(state.openProgress);
+  const grip = state.phase === 'unfold' ? geometry.grip : geometry.releaseGrip;
 
   return (
     <div className="lantern-page" data-lantern-phase={state.phase} id="lantern-app">
@@ -332,6 +347,7 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
             {state.phase !== 'keepsake' ? (
               <>
                 <div
+                  ref={paper}
                   className={`lantern-object ${state.phase === 'flying' ? 'lantern-object-flying' : ''}`}
                 >
                   <LanternArt
@@ -341,16 +357,14 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
                     flying={state.phase === 'flying'}
                     lit={state.phase === 'launch' || state.phase === 'flying'}
                   />
-                </div>
-                {(state.phase === 'unfold' || state.phase === 'launch') && (
-                  <>
-                    <div className="lantern-gesture-hint" aria-hidden="true">
-                      <span>↑</span>
-                      {state.phase === 'unfold' ? '按住红色提环，向上拉开' : '向上轻推，松手放飞'}
-                    </div>
+                  {(state.phase === 'unfold' || state.phase === 'launch') && (
                     <button
                       ref={handle}
                       type="button"
+                      style={{
+                        left: `${(grip.x / geometry.viewBox.width) * 100}%`,
+                        top: `${(grip.y / geometry.viewBox.height) * 100}%`,
+                      }}
                       className={`lantern-gesture-handle ${state.phase === 'unfold' ? 'lantern-pull-handle' : 'lantern-release-handle'}`}
                       aria-label={state.phase === 'unfold' ? '向上拉开纸灯' : '向上轻推放飞纸灯'}
                       onPointerDown={pointerDown}
@@ -384,6 +398,14 @@ export function LanternApp({ scene, controls, onSceneActiveChange }: LanternAppP
                         ↑
                       </span>
                     </button>
+                  )}
+                </div>
+                {(state.phase === 'unfold' || state.phase === 'launch') && (
+                  <>
+                    <div className="lantern-gesture-hint" aria-hidden="true">
+                      <span>↑</span>
+                      {state.phase === 'unfold' ? '按住红色提环，向上拉开' : '向上轻推，松手放飞'}
+                    </div>
                   </>
                 )}
                 <div className="lantern-stage-caption" aria-hidden="true">

@@ -13,6 +13,24 @@ export interface LanternArtProps {
   className?: string;
 }
 
+/** One coordinate system for the paper and the real HTML gesture handles. */
+export function lanternGeometry(open: number) {
+  const progress = Number.isFinite(open) ? Math.min(1, Math.max(0, open)) : 0;
+  const height = 44 + progress * 128;
+  const bottom = 250;
+  const top = bottom - height;
+  return {
+    progress,
+    top,
+    bottom,
+    height,
+    grip: { x: 140, y: top - 24 },
+    releaseGrip: { x: 140, y: 294 },
+    unfoldTravel: 128,
+    viewBox: { width: 280, height: 340 },
+  };
+}
+
 /* Original paper colors. The surrounding experience owns all gestures and movement. */
 const papers = {
   red: { edge: '#A7202B', paper: '#CE5145', center: '#E98262', motif: '#FFF0D3' },
@@ -100,8 +118,9 @@ function Ripples({ ink }: { ink: string }) {
 }
 
 /**
- * Fixed 280×340 canvas. HTML grip anchor: x=140, y=294 (50%, 86.47%).
- * Paper expands internally from y=78..122 to y=78..250. No SVG element is a hit target.
+ * Fixed canvas and lower rim. Lifting the top grip expands the paper upward;
+ * the application derives its HTML grip and drag scale from lanternGeometry.
+ * No SVG element is a hit target.
  */
 export function LanternArt({
   open,
@@ -112,11 +131,8 @@ export function LanternArt({
   className = '',
 }: LanternArtProps) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
-  const progress = Number.isFinite(open) ? Math.min(1, Math.max(0, open)) : 0;
+  const { progress, top, bottom, height, viewBox } = lanternGeometry(open);
   const palette = papers[color] ?? papers.red;
-  const top = 78;
-  const height = 44 + progress * 128;
-  const bottom = top + height;
   const left = 140 - (76 + progress * 17);
   const right = 280 - left;
   const middle = top + height * 0.5;
@@ -126,7 +142,7 @@ export function LanternArt({
   return (
     <svg
       className={`lantern-art ${className}`}
-      viewBox="0 0 280 340"
+      viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
       fill="none"
       aria-hidden="true"
       focusable="false"
@@ -179,9 +195,14 @@ export function LanternArt({
         fill="#93704C"
         opacity=".09"
       />
-      <path d="M140 32c12 7 12 19 0 27" stroke="#B82025" strokeWidth="2" strokeLinecap="round" />
-      <path d="m140 55 4 5-4 5-4-5Z" fill="#B82025" />
-      <path d="M140 64v12" stroke="#AC7450" strokeWidth="1.4" />
+      <path
+        d={`M140 ${top - 46}c12 7 12 19 0 27`}
+        stroke="#B82025"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path d={`m140 ${top - 23} 4 5-4 5-4-5Z`} fill="#B82025" />
+      <path d={`M140 ${top - 14}v12`} stroke="#AC7450" strokeWidth="1.4" />
       <path d={body} fill={`url(#paper-${id})`} stroke={palette.edge} strokeWidth="1" />
       <g clipPath={`url(#shape-${id})`}>
         {Array.from({ length: 8 }, (_, index) => (
@@ -230,8 +251,13 @@ export function LanternArt({
         </g>
       </g>
 
-      <path d="M89 74q51-13 102 0v10q-51 10-102 0Z" fill="#AB2830" />
-      <path d="M93 75q47-10 94 0" stroke="#D8B46A" strokeWidth="1.3" strokeLinecap="round" />
+      <path d={`M89 ${top - 4}q51-13 102 0v10q-51 10-102 0Z`} fill="#AB2830" />
+      <path
+        d={`M93 ${top - 3}q47-10 94 0`}
+        stroke="#D8B46A"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
       <path
         d={`M91 ${bottom - 6}Q140 ${bottom + 5} 189 ${bottom - 6}V${bottom + 3}Q140 ${bottom + 14} 91 ${bottom + 3}Z`}
         fill="#AB2830"

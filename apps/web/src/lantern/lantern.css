@@ -196,7 +196,6 @@
   min-width: 0;
 }
 .lantern-stage {
-  --lantern-handle-y: 287px;
   position: relative;
   height: 455px;
   width: 100%;
@@ -287,9 +286,9 @@
   animation: lantern-rise 2.2s cubic-bezier(0.22, 0.5, 0.35, 1) forwards;
 }
 .lantern-page .lantern-gesture-handle {
+  pointer-events: auto;
   position: absolute;
   left: 50%;
-  top: var(--lantern-handle-y);
   transform: translate(-50%, -50%);
   width: 64px;
   height: 64px;
@@ -951,7 +950,6 @@
   }
   .lantern-stage {
     height: 420px;
-    --lantern-handle-y: 255px;
     border-radius: 130px 130px 13px 13px;
   }
   .lantern-object {

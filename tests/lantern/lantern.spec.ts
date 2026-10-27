@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import type { Locator, Page } from '@playwright/test';
 import { test, expect, grantMedia, mediaCounts, reloadLantern } from './fixture.js';
 
@@ -52,6 +52,42 @@ async function openProgress(page: Page): Promise<number> {
   return Number(await page.locator('[data-open-progress]').getAttribute('data-open-progress'));
 }
 
+async function screenGeometry(page: Page) {
+  return page.evaluate(() => {
+    const svg = document.querySelector<SVGSVGElement>('.lantern-object > svg');
+    const stage = document.querySelector<HTMLElement>('.lantern-stage');
+    const handle = document.querySelector<HTMLElement>('.lantern-pull-handle');
+    if (!svg || !stage || !handle) throw new Error('The unfolding paper or real grip is absent.');
+    const rims = [...svg.children].filter(
+      (element) => element.tagName === 'path' && element.getAttribute('fill') === '#AB2830',
+    ) as SVGGraphicsElement[];
+    if (rims.length !== 2) throw new Error('The two visible red paper rims are absent.');
+    const stageBox = stage.getBoundingClientRect();
+    const center = (element: SVGGraphicsElement) => {
+      const box = element.getBBox();
+      const matrix = element.getScreenCTM();
+      if (!matrix) throw new Error('The visible rim has no screen transform.');
+      const point = new DOMPoint(box.x + box.width / 2, box.y + box.height / 2).matrixTransform(
+        matrix,
+      );
+      return { x: point.x - stageBox.x, y: point.y - stageBox.y };
+    };
+    const matrix = svg.getScreenCTM();
+    if (!matrix) throw new Error('The visible paper has no screen transform.');
+    const origin = new DOMPoint(0, 0).matrixTransform(matrix);
+    const extended = new DOMPoint(0, 128).matrixTransform(matrix);
+    const box = handle.getBoundingClientRect();
+    return {
+      top: center(rims[0]!),
+      bottom: center(rims[1]!),
+      handle: { x: box.x + box.width / 2 - stageBox.x, y: box.y + box.height / 2 - stageBox.y },
+      travel: extended.y - origin.y,
+    };
+  });
+}
+
+type ScreenGeometry = Awaited<ReturnType<typeof screenGeometry>>;
+
 /** Real browser input: desktop capture loss or native CDP touchCancel on cancel. */
 async function pull(
   page: Page,
@@ -59,6 +95,7 @@ async function pull(
   name: '向上拉开纸灯' | '向上轻推放飞纸灯',
   distance: number,
   cancel = false,
+  whileHeld?: (before: ScreenGeometry) => Promise<void>,
 ): Promise<void> {
   const handle = page.getByRole('button', { name, exact: true });
   await handle.evaluate((element) =>
@@ -69,6 +106,7 @@ async function pull(
   const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   const finish = { x: start.x, y: start.y - distance };
   expect(finish.y).toBeGreaterThan(0);
+  const before = whileHeld ? await screenGeometry(page) : undefined;
   await handle.evaluate((element) => {
     element.addEventListener(
       'pointerdown',
@@ -100,6 +138,7 @@ async function pull(
         });
       else await page.mouse.move(point.x, point.y);
     }
+    if (whileHeld && before) await whileHeld(before);
     if (touch) {
       await touch.send('Input.dispatchTouchEvent', {
         type: cancel ? 'touchCancel' : 'touchEnd',
@@ -157,14 +196,69 @@ test('真实三段拉开含取消续拉、全部纸色纹样、轻推放飞和�
   await page.screenshot({ path: `${prefix}-wish.png`, fullPage: true });
   await setWish(page, isMobile);
   await expect(page.getByRole('button', { name: '开始装饰', exact: true })).toBeDisabled();
-  await pull(page, isMobile, '向上拉开纸灯', 60);
+  const travel = (await screenGeometry(page)).travel;
+  const geometryEvidence: { action: string; before: ScreenGeometry; held: ScreenGeometry }[] = [];
+  const inspect =
+    (action: string, progress: number, movement: number) => async (before: ScreenGeometry) => {
+      await expect.poll(() => openProgress(page)).toBeCloseTo(progress, 2);
+      const held = await screenGeometry(page);
+      expect(Math.abs(held.bottom.y - before.bottom.y)).toBeLessThan(0.5);
+      expect(Math.abs(held.top.y - before.top.y + movement)).toBeLessThan(1);
+      expect(Math.abs(held.handle.y - before.handle.y + movement)).toBeLessThan(1);
+      expect(Math.abs(held.handle.x - held.top.x)).toBeLessThan(0.5);
+      expect(Math.abs(held.handle.y - held.top.y - (before.handle.y - before.top.y))).toBeLessThan(
+        0.5,
+      );
+      geometryEvidence.push({ action, before, held });
+    };
+  await pull(
+    page,
+    isMobile,
+    '向上拉开纸灯',
+    -travel / 3,
+    false,
+    inspect('reverse down; no opening', 0, 0),
+  );
+  expect(await openProgress(page)).toBe(0);
+  await pull(
+    page,
+    isMobile,
+    '向上拉开纸灯',
+    travel / 3,
+    false,
+    inspect('first upward segment held', 1 / 3, travel / 3),
+  );
   expect(await openProgress(page)).toBeCloseTo(1 / 3, 2);
-  await pull(page, isMobile, '向上拉开纸灯', 60, true);
+  await pull(
+    page,
+    isMobile,
+    '向上拉开纸灯',
+    -travel / 3,
+    false,
+    inspect('reverse after partial opening; retain progress', 1 / 3, 0),
+  );
+  expect(await openProgress(page)).toBeCloseTo(1 / 3, 2);
+  await pull(
+    page,
+    isMobile,
+    '向上拉开纸灯',
+    travel / 3,
+    true,
+    inspect('second upward segment then cancel', 2 / 3, travel / 3),
+  );
   expect(await openProgress(page)).toBeCloseTo(2 / 3, 2);
   await phase(page, 'unfold');
   await page.screenshot({ path: `${prefix}-partial.png`, fullPage: true });
-  await pull(page, isMobile, '向上拉开纸灯', 60);
+  await pull(
+    page,
+    isMobile,
+    '向上拉开纸灯',
+    travel / 3 + 1,
+    false,
+    inspect('regrip and reach mechanical endpoint', 1, travel / 3),
+  );
   expect(await openProgress(page)).toBe(1);
+  await writeFile(`${prefix}-direction-geometry.json`, JSON.stringify(geometryEvidence, null, 2));
   await phase(page, 'unfold');
   await activate(page.getByRole('button', { name: '开始装饰', exact: true }), isMobile);
   for (const name of ['朱砂红', '暖杏', '米白', '花开', '窗花', '涟漪']) {
@@ -227,7 +321,7 @@ test('超过放飞阈值但取消不会生成卡，随后真实重新轻推可�
 
 test('半展开和flying可恢复，卡片刷新幂等；清除不碰其它主题记录', async ({ page, isMobile }) => {
   await setWish(page, isMobile);
-  await pull(page, isMobile, '向上拉开纸灯', 60);
+  await pull(page, isMobile, '向上拉开纸灯', (await screenGeometry(page)).travel / 3);
   await reloadLantern(page);
   await phase(page, 'unfold');
   expect(await openProgress(page)).toBeCloseTo(1 / 3, 2);
