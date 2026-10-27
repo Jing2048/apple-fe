@@ -1,5 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": { "noEmit": true },
-  "include": ["playwright.config.ts", "playwright.offline.config.ts", "tests/**/*.ts"]
+  "include": [
+    "playwright.config.ts",
+    "playwright.offline.config.ts",
+    "playwright.lantern.config.ts",
+    "tests/**/*.ts"
+  ]
 }

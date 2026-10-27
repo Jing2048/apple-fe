@@ -10,12 +10,17 @@ import { argv } from 'node:process';
 const options = argv.slice(2);
 if (
   options.length > 1 ||
-  options.some((value) => !['--theme=classic', '--theme=new-year'].includes(value))
+  options.some(
+    (value) => !['--theme=classic', '--theme=new-year', '--experience=lantern'].includes(value),
+  )
 )
-  throw new Error('Use --theme=classic or --theme=new-year.');
-const theme = options[0] === '--theme=new-year' ? 'new-year' : 'classic';
+  throw new Error('Use --theme=classic, --theme=new-year or --experience=lantern.');
+const lantern = options[0] === '--experience=lantern';
+const theme = options[0] === '--theme=new-year' || lantern ? 'new-year' : 'classic';
 const newYear = theme === 'new-year';
-const title = `${newYear ? '新春云朵邮局' : '云朵邮局'} · 离线演示`;
+const title = lantern
+  ? '把愿望放上天 · 新年纸灯'
+  : `${newYear ? '新春云朵邮局' : '云朵邮局'} · 离线演示`;
 
 // Resolve the existing web toolchain; no extra bundler or single-file plugin dependency.
 const webRoot = fileURLToPath(new URL('../apps/web/', import.meta.url));
@@ -41,7 +46,12 @@ const result = await build({
     modulePreload: false,
     minify: true,
     lib: {
-      entry: fileURLToPath(new URL('../apps/web/src/offline/main.tsx', import.meta.url)),
+      entry: fileURLToPath(
+        new URL(
+          lantern ? '../apps/web/src/lantern/main.tsx' : '../apps/web/src/offline/main.tsx',
+          import.meta.url,
+        ),
+      ),
       formats: ['iife'],
       name: 'CloudPostOffline',
     },
@@ -82,13 +92,13 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="${newYear ? '#F8F3E9' : '#f8f6ef'}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; media-src blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="description" content="${newYear ? '新春云朵邮局：把新意，带回家。' : '云朵邮局单文件离线演示。'}记录仅在本机，不连接服务端。">
+<meta name="description" content="${lantern ? '写一句心愿，展开、装饰并虚拟放飞一盏原创纸灯。' : newYear ? '新春云朵邮局：把新意，带回家。' : '云朵邮局单文件离线演示。'}记录仅在本机，不连接服务端。">
 <title>${title}</title><style>${css}</style></head>
 <body><noscript>这是离线演示，请用支持 JavaScript 的现代浏览器打开完整 HTML 文件。</noscript><div id="root"></div><script>${javascript}</script></body></html>\n`;
 const bytes = Buffer.byteLength(html);
 if (bytes > 512 * 1024) throw new Error(`Offline file exceeds the 512 KiB budget: ${bytes} bytes.`);
 const output = new URL(
-  `../.artifacts/offline/${newYear ? 'cloud-post-new-year' : 'cloud-post-offline'}.html`,
+  `../.artifacts/offline/${lantern ? 'paper-lantern-new-year' : newYear ? 'cloud-post-new-year' : 'cloud-post-offline'}.html`,
   import.meta.url,
 );
 await mkdir(new URL('./', output), { recursive: true });
@@ -102,9 +112,13 @@ const report = {
   files: 1,
   externalAssets: 0,
   theme,
+  experience: lantern ? 'lantern' : 'cloud-post',
 };
 await writeFile(
-  new URL(newYear ? './new-year-build.json' : './build.json', output),
+  new URL(
+    lantern ? './paper-lantern-build.json' : newYear ? './new-year-build.json' : './build.json',
+    output,
+  ),
   JSON.stringify(report, null, 2) + '\n',
 );
 log(JSON.stringify(report, null, 2));

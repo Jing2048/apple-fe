@@ -1,0 +1,30 @@
+.lantern-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 14 / 17;
+  overflow: visible;
+  pointer-events: none;
+}
+.lantern-art * {
+  pointer-events: none;
+}
+.lantern-art__warmth {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.lantern-art[data-lit='true'] .lantern-art__warmth {
+  opacity: 1;
+}
+.lantern-art__ground-shadow {
+  transition: opacity 0.3s ease;
+}
+.lantern-art[data-flying='true'] .lantern-art__ground-shadow {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lantern-art__warmth,
+  .lantern-art__ground-shadow {
+    transition: none;
+  }
+}
