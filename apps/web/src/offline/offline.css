@@ -1,0 +1,132 @@
+.offline-note,
+.offline-records,
+.offline-clear-status {
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #314b66;
+}
+.offline-note {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 16px max(22px, calc((100% - 1120px) / 2));
+  background: #eaf2f3;
+  border-bottom: 1px solid #d2e2e4;
+}
+.offline-note strong {
+  display: inline-block;
+  border-radius: 999px;
+  background: #365f76;
+  color: #fff;
+  padding: 5px 12px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+.offline-note p {
+  margin: 7px 0 4px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.offline-note span {
+  color: #516d7c;
+  font-size: 12px;
+}
+.offline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.offline-actions button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #a9c1cb;
+  border-radius: 999px;
+  background: #fffdf6;
+  color: #36576b;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.offline-actions button:focus-visible {
+  outline: 3px solid #d28a50;
+  outline-offset: 3px;
+}
+.offline-clear-status:empty {
+  display: none;
+}
+.offline-clear-status {
+  margin: 0;
+  padding: 12px 22px;
+  text-align: center;
+  background: #fff4df;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.offline-records {
+  max-width: 1120px;
+  margin: 24px auto;
+  padding: 24px;
+  border: 1px solid #d8e2e6;
+  border-radius: 24px;
+  background: #fffdf7;
+}
+.offline-records h2 {
+  margin: 0;
+  font-size: 21px;
+}
+.offline-records p {
+  line-height: 1.8;
+  font-size: 13px;
+}
+.offline-records ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.offline-records li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px dashed #d8e2e6;
+}
+.offline-records li > span {
+  color: #b77b25;
+  font-size: 26px;
+}
+.offline-records li strong {
+  font-size: 14px;
+}
+.offline-records li p {
+  margin: 4px 0 0;
+}
+.offline-records time {
+  margin-left: auto;
+  font-size: 12px;
+  color: #5e7583;
+}
+@media (max-width: 600px) {
+  .offline-note {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 20px;
+  }
+  .offline-actions {
+    width: 100%;
+  }
+  .offline-records {
+    margin: 16px 14px;
+    padding: 20px;
+  }
+  .offline-records li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .offline-records time {
+    margin-left: 36px;
+    width: 100%;
+  }
+}

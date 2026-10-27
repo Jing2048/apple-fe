@@ -102,6 +102,11 @@
   color: #c7ad73;
   margin-left: 8px;
 }
+.post-header-note.post-offline-label {
+  color: #536f7e;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+}
 .post-main {
   width: min(100% - 60px, 1060px);
   margin: 0 auto;

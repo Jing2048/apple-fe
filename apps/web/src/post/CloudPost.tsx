@@ -4,16 +4,29 @@ import { api } from '../api/client';
 import { loadCriticalImages } from '../assets/loader';
 import type { InteractionAction, Phase } from '../interaction/machine';
 import { crossedTargets, type Point, type Target } from '../interaction/pointer';
-import { TelemetryClient } from '../telemetry/client';
+import { TelemetryClient, type TelemetrySnapshot } from '../telemetry/client';
 import { uuid } from '../uuid';
 import { CloudFriend, PaperPlane, Star } from './art';
 import { activeStarIds, createPostState, postReducer, STAR_GROUPS } from './logic';
 import { getPostStorage, readPostDraft, savePostDraft, type BlessingIndex } from './recovery';
 import { PostReceipt } from './PostReceipt';
+import type { CloudPostProps } from './runtime';
 import './post.css';
 
 const campaignId = 'cloud-post';
 const releaseId: string = import.meta.env.VITE_RELEASE_ID ?? 'development';
+const disabledTelemetry: TelemetrySnapshot = {
+  consent: false,
+  queued: 0,
+  accepted: 0,
+  duplicates: 0,
+  dropped: 0,
+  sending: false,
+  lastError: null,
+  beaconAttempted: false,
+};
+const subscribeWithoutTelemetry = () => () => {};
+const getDisabledTelemetry = () => disabledTelemetry;
 const phaseLabels: Record<Phase, string> = {
   loading: '正在打开云朵邮局',
   ready: '准备收集星光',
@@ -39,15 +52,26 @@ const blessings = [
     name: '寄给认真生活的你',
   },
 ] as const;
+export const POST_BLESSINGS = blessings;
 
-export function CloudPost() {
-  const [telemetry] = useState(() => new TelemetryClient({ campaignId, releaseId }));
-  const analytics = useSyncExternalStore(telemetry.subscribe, telemetry.getSnapshot);
+export function CloudPost({ offline }: CloudPostProps = {}) {
+  const draftStorage = offline ? offline.draftStorage : getPostStorage();
+  const [telemetry] = useState(() =>
+    offline ? null : new TelemetryClient({ campaignId, releaseId }),
+  );
+  const analytics = useSyncExternalStore(
+    telemetry?.subscribe ?? subscribeWithoutTelemetry,
+    telemetry?.getSnapshot ?? getDisabledTelemetry,
+  );
   const campaign = useQuery({
-    queryKey: ['campaign', campaignId],
-    queryFn: ({ signal }) => api.campaign(campaignId, signal),
+    queryKey: offline
+      ? ['campaign', campaignId, 'offline', offline.campaign.version]
+      : ['campaign', campaignId],
+    queryFn: ({ signal }) =>
+      offline ? Promise.resolve(offline.campaign) : api.campaign(campaignId, signal),
+    networkMode: offline ? 'always' : 'online',
   });
-  const [draft] = useState(() => readPostDraft(getPostStorage()));
+  const [draft] = useState(() => readPostDraft(draftStorage));
   const [state, setState] = useState(() => createPostState(draft?.state.roundId ?? uuid()));
   const [blessingIndex, setBlessingIndex] = useState<BlessingIndex>(draft?.blessingIndex ?? 0);
   const [cloudPoint, setCloudPoint] = useState<Point>({ x: 50, y: 74 });
@@ -94,7 +118,7 @@ export function CloudPost() {
         ? postReducer(next, { type: 'PAUSE', now: performance.now() })
         : next;
     if (!['loading', 'error'].includes(next.phase))
-      setStorageWorks(savePostDraft(getPostStorage(), snapshot, blessingRef.current));
+      setStorageWorks(savePostDraft(draftStorage, snapshot, blessingRef.current));
     setState(next);
     if (
       action.type === 'RESTORE' ||
@@ -104,15 +128,15 @@ export function CloudPost() {
     )
       return;
     const properties = { roundId: previous.roundId, interaction: 'swipe' as const };
-    if (action.type === 'RESET') telemetry.track('interaction_reset', { ...properties, reason });
+    if (action.type === 'RESET') telemetry?.track('interaction_reset', { ...properties, reason });
     else if (previous.phase === 'ready' && next.phase === 'playing')
-      telemetry.track('interaction_started', properties);
+      telemetry?.track('interaction_started', properties);
     else if (previous.phase === 'playing' && next.phase === 'paused')
-      telemetry.track('interaction_paused', { ...properties, reason });
+      telemetry?.track('interaction_paused', { ...properties, reason });
     else if (previous.phase === 'paused' && next.phase === 'playing')
-      telemetry.track('interaction_resumed', { ...properties, reason });
+      telemetry?.track('interaction_resumed', { ...properties, reason });
     else if (next.phase === 'completed' && previous.phase !== 'completed')
-      telemetry.track('interaction_completed', {
+      telemetry?.track('interaction_completed', {
         ...properties,
         durationMs: Math.round(next.activeMs),
         steps: next.steps,
@@ -127,7 +151,11 @@ export function CloudPost() {
     }
     if (!campaign.data || stateRef.current.phase !== 'loading') return;
     const controller = new AbortController();
-    void loadCriticalImages(campaign.data, { signal: controller.signal })
+    // Standalone artwork is inline; offline mode never fetches even injected asset URLs.
+    const resourcesReady = offline
+      ? Promise.resolve()
+      : loadCriticalImages(campaign.data, { signal: controller.signal });
+    void resourcesReady
       .then(() => {
         if (controller.signal.aborted) return;
         if (draft && !restored.current) {
@@ -141,7 +169,7 @@ export function CloudPost() {
           type: 'LOAD_FAILED',
           message: error instanceof Error ? error.message : '信件还在路上，请再试一次。',
         });
-        telemetry.track('resource_failed', { roundId: stateRef.current.roundId, reason: 'asset' });
+        telemetry?.track('resource_failed', { roundId: stateRef.current.roundId, reason: 'asset' });
       });
     return () => controller.abort();
   }, [
@@ -152,6 +180,7 @@ export function CloudPost() {
     draft,
     loadAttempt,
     telemetry,
+    offline,
   ]);
 
   useEffect(() => {
@@ -159,19 +188,19 @@ export function CloudPost() {
       pointer.current = null;
       if (stateRef.current.phase === 'playing')
         sendRef.current({ type: 'PAUSE', now: performance.now() }, 'hidden');
-      if (typeof navigator.sendBeacon === 'function')
+      if (telemetry && typeof navigator.sendBeacon === 'function')
         telemetry.beacon((url, body) => navigator.sendBeacon(url, body));
     };
     const visibility = () => {
       if (document.visibilityState === 'hidden') saveAndPause();
-      else void telemetry.flush();
+      else void telemetry?.flush();
     };
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('pagehide', saveAndPause);
     return () => {
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', saveAndPause);
-      telemetry.stop();
+      telemetry?.stop();
     };
   }, [telemetry]);
 
@@ -242,10 +271,10 @@ export function CloudPost() {
   const chooseBlessing = (index: BlessingIndex) => {
     blessingRef.current = index;
     setBlessingIndex(index);
-    setStorageWorks(savePostDraft(getPostStorage(), stateRef.current, index));
+    setStorageWorks(savePostDraft(draftStorage, stateRef.current, index));
   };
   const consent = () => {
-    if (!campaign.isSuccess || analytics.consent) return;
+    if (!telemetry || !campaign.isSuccess || analytics.consent) return;
     telemetry.setConsent(true);
     telemetry.track('page_view');
   };
@@ -255,9 +284,9 @@ export function CloudPost() {
   const journey = state.phase === 'playing' || state.phase === 'paused';
 
   return (
-    <div className="post-page" ref={page}>
+    <div className="post-page" id="cloud-post" ref={page}>
       <header className="post-header">
-        <a href="/" className="post-brand" aria-label="云朵邮局首页">
+        <a href={offline ? '#cloud-post' : '/'} className="post-brand" aria-label="云朵邮局首页">
           <span className="post-brand-icon" aria-hidden="true">
             ☁
           </span>
@@ -265,8 +294,8 @@ export function CloudPost() {
             云朵邮局<small>CLOUD POST OFFICE</small>
           </span>
         </a>
-        <span className="post-header-note">
-          今日营业中 <span aria-hidden="true">✦</span>
+        <span className={`post-header-note${offline ? ' post-offline-label' : ''}`}>
+          {offline ? '本机试玩中' : '今日营业中'} <span aria-hidden="true">✦</span>
         </span>
       </header>
       <main className="post-main">
@@ -531,56 +560,70 @@ export function CloudPost() {
                 </button>
               ))}
             </div>
-            <PostReceipt
-              key={state.roundId}
-              roundId={state.roundId}
-              sessionReady={campaign.isSuccess}
-              telemetry={telemetry}
-              recovered={draft?.state.roundId === state.roundId}
-            />
+            {offline
+              ? offline.renderReceipt({ roundId: state.roundId, blessingIndex })
+              : telemetry && (
+                  <PostReceipt
+                    key={state.roundId}
+                    roundId={state.roundId}
+                    sessionReady={campaign.isSuccess}
+                    telemetry={telemetry}
+                    recovered={draft?.state.roundId === state.roundId}
+                  />
+                )}
             <button type="button" className="post-primary post-again" onClick={reset}>
               重新寄一封<span aria-hidden="true">↗</span>
             </button>
           </section>
         )}
 
-        <section className="post-privacy" aria-label="体验统计选择">
-          <span className="post-privacy-icon" aria-hidden="true">
-            ♡
-          </span>
-          <div>
-            <strong>让下一次相遇，再好一点点</strong>
-            <p>可以选择发送匿名交互统计。不包含祝福文字；不启用也一样能玩。</p>
-            {!campaign.isSuccess && <small>邮局连接成功后可选择。</small>}
-          </div>
-          <div className="post-privacy-actions">
-            <button
-              type="button"
-              className="post-text-button"
-              onClick={consent}
-              disabled={!campaign.isSuccess || analytics.consent}
-            >
-              {analytics.consent ? '已同意体验统计' : '同意体验统计'}
-            </button>
-            <button
-              type="button"
-              className="post-text-button"
-              onClick={() => telemetry.setConsent(false)}
-            >
-              暂不启用统计
-            </button>
-          </div>
-        </section>
+        {!offline && (
+          <section className="post-privacy" aria-label="体验统计选择">
+            <span className="post-privacy-icon" aria-hidden="true">
+              ♡
+            </span>
+            <div>
+              <strong>让下一次相遇，再好一点点</strong>
+              <p>可以选择发送匿名交互统计。不包含祝福文字；不启用也一样能玩。</p>
+              {!campaign.isSuccess && <small>邮局连接成功后可选择。</small>}
+            </div>
+            <div className="post-privacy-actions">
+              <button
+                type="button"
+                className="post-text-button"
+                onClick={consent}
+                disabled={!campaign.isSuccess || analytics.consent}
+              >
+                {analytics.consent ? '已同意体验统计' : '同意体验统计'}
+              </button>
+              <button
+                type="button"
+                className="post-text-button"
+                onClick={() => telemetry?.setConsent(false)}
+              >
+                暂不启用统计
+              </button>
+            </div>
+          </section>
+        )}
         {!storageWorks && (
           <p className="post-storage-note" role="status">
-            这台浏览器未允许本机保存，关闭页面后可能无法找回进度。当前仍然可以继续玩。
+            {offline
+              ? '这份离线演示暂时无法保存草稿，关闭后可能找不回进度。当前仍然可以继续玩。'
+              : '这台浏览器未允许本机保存，关闭页面后可能无法找回进度。当前仍然可以继续玩。'}
           </p>
         )}
       </main>
       <footer className="post-footer">
         <span>云朵邮局 · 把晴天寄给你</span>
         <span>
-          原创互动演示 <i aria-hidden="true">✦</i> <a href="/lab">工程验证台</a>
+          {offline ? (
+            '原创离线演示 · 祝福留在本机'
+          ) : (
+            <>
+              原创互动演示 <i aria-hidden="true">✦</i> <a href="/lab">工程验证台</a>
+            </>
+          )}
         </span>
       </footer>
     </div>

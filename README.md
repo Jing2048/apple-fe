@@ -2,6 +2,8 @@
 
 “云朵邮局”已发布到 <https://jing-cloud-post-demo.fizzyllama25.chatgpt.site>，任何拿到链接的人均可打开，无需登录。正式域名已通过未登录浏览器完整试玩、真实保存和数据库读回。首页为原创可玩体验，旧工程台位于 `/lab`；发布版本与验证边界见 [Sites 部署记录](docs/sites-adaptation.md)，环境内截图/录屏与测试见 [云朵邮局验收](docs/cloud-post-acceptance.md)。
 
+需要直接打开文件时，可运行 `pnpm build:offline`，得到单文件 `.artifacts/offline/cloud-post-offline.html`。它明确标记离线演示，保留玩法与卡片，只使用本机记录；不依赖 API、CDN 或登录。构建、运行和测试见 [离线版说明](docs/offline-demo.md)。
+
 面向中国大陆、微信内置浏览器和 Safari 的活动开发基线。首页以原创体验贯通真实保存链路；`/lab` 使用占位素材验证两类通用交互、状态恢复、后端契约、第一方事件采集和可重复交付。
 
 这里没有正式 Apple 页面、真实会员接口、抽奖或权益发放。外部适配器明确标为 `mock`；原 Fastify API 保留 `NODE_ENV=production` 启动保护，已托管版本仅用于 demo 验收。上传的 Keynote 尚未成功读取，技术探针不能视为其中具体玩法已验收。
