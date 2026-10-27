@@ -1,0 +1,40 @@
+{
+  "name": "apple-campaign-infrastructure",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @apple/contracts build && concurrently --kill-others-on-fail -n contracts,api,web \"pnpm --filter @apple/contracts dev\" \"pnpm --filter @apple/api dev\" \"pnpm --filter @apple/web dev\"",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @apple/contracts build && pnpm -r typecheck && tsc -p tsconfig.tools.json && pnpm typecheck:worker",
+    "typecheck:worker": "tsc -p apps/worker/tsconfig.json",
+    "test": "pnpm --filter @apple/contracts build && pnpm -r test && pnpm test:worker",
+    "test:worker": "vitest run --root apps/worker",
+    "test:integration": "pnpm --filter @apple/api test:integration",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "db:migrate": "pnpm --filter @apple/api db:migrate",
+    "db:up": "docker compose -f infra/compose.yaml up -d db",
+    "db:down": "docker compose -f infra/compose.yaml stop db",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm assets:check && pnpm test && pnpm build && pnpm perf:build",
+    "perf:build": "node scripts/check-build.mjs",
+    "assets:check": "pnpm --filter @apple/contracts build && node scripts/check-assets.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.58.0",
+    "@types/node": "^24.10.0",
+    "concurrently": "^9.2.1",
+    "eslint": "10.13.0",
+    "prettier": "^3.7.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.0",
+    "vitest": "^4.0.0",
+    "@apple/contracts": "workspace:*"
+  }
+}

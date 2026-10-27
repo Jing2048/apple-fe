@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/dist
+**/coverage
+**/test-results
+**/playwright-report
+.env
+.env.*
+!.env.example
+.pnpm-store
+.cache
+artifacts
+.artifacts
+.local-backups
+*.log

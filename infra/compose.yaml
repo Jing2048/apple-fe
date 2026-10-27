@@ -1,0 +1,67 @@
+name: apple-lab
+
+# Local verification stack. These credentials and provider settings are
+# deliberately development-only; this is not a production deployment file.
+services:
+  db:
+    image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    environment:
+      POSTGRES_DB: apple_lab
+      POSTGRES_USER: apple
+      POSTGRES_PASSWORD: apple_dev_only
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U apple -d apple_lab']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      target: api-runtime
+      args:
+        RELEASE_ID: ${RELEASE_ID:-local-container}
+    environment:
+      DATABASE_URL: postgres://apple:apple_dev_only@db:5432/apple_lab
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3001
+      APP_ORIGIN: http://localhost:${WEB_PORT:-8080}
+      RELEASE_ID: ${RELEASE_ID:-local-container}
+      PROVIDER_MODE: mock
+      SESSION_SECRET: local-development-session-secret-change-before-shared-use
+    command: ['sh', '-c', 'node apps/api/dist/migrate.js && exec node apps/api/dist/index.js']
+    ports:
+      - '127.0.0.1:${API_PORT:-3001}:3001'
+    depends_on:
+      db:
+        condition: service_healthy
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      target: web-runtime
+      args:
+        RELEASE_ID: ${RELEASE_ID:-local-container}
+    ports:
+      - '127.0.0.1:${WEB_PORT:-8080}:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+volumes:
+  postgres-data:

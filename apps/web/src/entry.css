@@ -1,0 +1,46 @@
+html {
+  min-width: 320px;
+  background: #f8f6ef;
+}
+body {
+  margin: 0;
+}
+.entry-fallback {
+  box-sizing: border-box;
+  min-height: 100svh;
+  display: grid;
+  place-content: center;
+  gap: 18px;
+  padding: 32px;
+  text-align: center;
+  color: #314b66;
+  background: #f8f6ef;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.entry-fallback > span {
+  font-size: 44px;
+}
+.entry-fallback h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+.entry-fallback p {
+  margin: 0;
+  line-height: 1.8;
+  color: #64798d;
+}
+.entry-fallback button {
+  justify-self: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 26px;
+  background: #365f86;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+.entry-fallback button:focus-visible {
+  outline: 3px solid #e9ad76;
+  outline-offset: 5px;
+}
