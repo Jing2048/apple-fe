@@ -575,11 +575,11 @@
   width: 100%;
 }
 .post-player-cloud > svg.post-cloud-drag-handle {
-  pointer-events: visiblePainted;
-}
-/* The first ellipse is the decorative ground shadow, not the courier body. */
-.post-player-cloud > svg.post-cloud-drag-handle > ellipse:first-of-type {
   pointer-events: none;
+}
+/* SVG viewports can intercept empty space; only these two painted shapes are grips. */
+.post-player-cloud > svg.post-cloud-drag-handle [data-cloud-grip] {
+  pointer-events: visiblePainted;
 }
 .post-player-cloud > span {
   pointer-events: none;

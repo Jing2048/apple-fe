@@ -47,6 +47,7 @@ export function CloudFriend({
         transform="translate(0 7)"
       />
       <path
+        data-cloud-grip=""
         d="M62 154c-29 0-46-15-46-38 0-20 13-35 33-39 2-29 22-47 47-47 18 0 33 9 41 23 8-6 17-9 27-9 25 0 43 17 46 40 18 5 29 19 29 36 0 24-17 39-44 39H62Z"
         fill={`url(#cloud-${id})`}
         stroke="#d1e5ef"
@@ -76,6 +77,7 @@ export function CloudFriend({
       <path d="M116 119c4 5 10 5 14 0" stroke="#455a69" strokeWidth="3" strokeLinecap="round" />
       <path d="m173 129-10 41" stroke="#889ca9" strokeWidth="5" strokeLinecap="round" />
       <rect
+        data-cloud-grip=""
         x="147"
         y="151"
         width="48"
